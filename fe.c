@@ -237,3 +237,8 @@ void fe_mul(fe h, const fe f, const fe g)
 
     fe_squeeze(h);
 }
+
+void fe_square(fe h, const fe f)
+{
+    fe_mul(h, f, f);
+}
