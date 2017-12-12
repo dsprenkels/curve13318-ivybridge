@@ -27,8 +27,8 @@ fe_mul = ref12.crypto_scalarmult_curve13318_ref12_fe_mul
 fe_mul.argtypes = [ctypes.c_double * 12] * 3
 fe_square = ref12.crypto_scalarmult_curve13318_ref12_fe_square
 fe_square.argtypes = [ctypes.c_double * 12] * 2
-# fe_invert = ref12.crypto_scalarmult_curve13318_ref12_fe_invert
-# fe_invert.argtypes = [ctypes.c_double * 12] * 2
+fe_invert = ref12.crypto_scalarmult_curve13318_ref12_fe_invert
+fe_invert.argtypes = [ctypes.c_double * 12] * 2
 # fe_reduce = ref12.crypto_scalarmult_curve13318_ref12_fe_reduce
 # fe_reduce.argtypes = [ctypes.c_double * 12]
 
@@ -112,6 +112,15 @@ class TestFE(unittest.TestCase):
         _, h_c = self.make_fe()
         expected = f**2
         fe_square(h_c, f_c)
+        actual = sum(self.F(int(x)) for x in h_c)
+        self.assertEqual(actual, expected)
+
+    @given(st_squeezed_0)
+    def test_invert(self, f_limbs):
+        f, f_c = self.make_fe(f_limbs)
+        _, h_c = self.make_fe()
+        expected = f**-1 if f != 0 else 0
+        fe_invert(h_c, f_c)
         actual = sum(self.F(int(x)) for x in h_c)
         self.assertEqual(actual, expected)
 
