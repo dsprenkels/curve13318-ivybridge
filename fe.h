@@ -46,7 +46,6 @@ typedef double fe[12];
 #define fe_copy crypto_scalarmult_curve13318_ref12_fe_copy
 #define fe_add crypto_scalarmult_curve13318_ref12_fe_add
 #define fe_sub crypto_scalarmult_curve13318_ref12_fe_sub
-#define fe_add_b crypto_scalarmult_curve13318_ref12_fe_add_b
 #define fe_squeeze crypto_scalarmult_curve13318_ref12_fe_squeeze
 #define fe_mul crypto_scalarmult_curve13318_ref12_fe_mul
 #define fe_square crypto_scalarmult_curve13318_ref12_fe_square
@@ -66,7 +65,7 @@ static inline void fe_zero(fe z) {
 Set a fe value to one
 */
 static inline void fe_one(fe z) {
-    z[0] = 1.0;
+    z[0] = 1;
     for (unsigned int i = 1; i < 12; i++) z[i] = 0;
 }
 
@@ -89,13 +88,6 @@ Subtract `rhs` from `lhs` and store the result in `z`
 */
 static inline void fe_sub(fe z, fe lhs, fe rhs) {
     for (unsigned int i = 0; i < 12; i++) z[i] = lhs[i] - rhs[i];
-}
-
-/*
-Add 13318 to `z`
-*/
-static inline void fe_add_b(fe z) {
-    z[0] += 13318.0;
 }
 
 /*
@@ -127,6 +119,21 @@ extern void fe_square(fe dest, const fe element);
 Invert an element modulo 2^255 - 19
 */
 extern void fe_invert(fe dest, const fe element);
+
+/*
+Add 13318 to `z`
+*/
+static inline void fe_add_b(fe z) {
+    z[0] += 13318;
+}
+
+/*
+Multiply `f` by 13318 and store the result in `h`
+*/
+static inline void fe_mul_b(fe h, fe f) {
+    for (unsigned int i = 0; i < 12; i++) h[i] = 13318 * f[i];
+    fe_squeeze(h);
+}
 
 /*
 Reduce an element s.t. the result is always in [0, 2^255-19⟩
