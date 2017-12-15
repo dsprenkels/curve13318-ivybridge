@@ -17,8 +17,8 @@ from hypothesis import example, given, strategies as st
 ref12 = ctypes.CDLL(os.path.join(os.path.abspath('.'), 'libref12.so'))
 
 # Define functions
-# fe_frombytes = ref12.crypto_scalarmult_curve13318_ref12_fe_frombytes
-# fe_frombytes.argtypes = [ctypes.c_double * 12, ctypes.c_ubyte * 32]
+fe_frombytes = ref12.crypto_scalarmult_curve13318_ref12_fe_frombytes
+fe_frombytes.argtypes = [ctypes.c_double * 12, ctypes.c_ubyte * 32]
 # fe_tobytes = ref12.crypto_scalarmult_curve13318_ref12_fe_tobytes
 # fe_tobytes.argtypes = [ctypes.c_ubyte * 32, ctypes.c_double * 12]
 fe_squeeze = ref12.crypto_scalarmult_curve13318_ref12_fe_squeeze
@@ -77,6 +77,15 @@ class TestFE(unittest.TestCase):
             z_c[i] = float(limb_val)
             shift += 22 if i % 4 == 0 else 21
         return z, z_c
+
+    @given(st.lists(st.integers(0, 255), min_size=32, max_size=32))
+    def test_frombytes(self, s):
+        expected = sum(self.F(x) * 2**(8*i) for i,x in enumerate(s))
+        s_c = (ctypes.c_ubyte * 32)(*s)
+        _, z_c = self.make_fe()
+        fe_frombytes(z_c, s_c)
+        actual = sum(self.F(int(x)) for x in z_c)
+        self.assertEqual(actual, expected)
 
     @given(st_unsqueezed)
     def test_squeeze(self, limbs):
