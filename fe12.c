@@ -1,4 +1,4 @@
-#include "fe.h"
+#include "fe12.h"
 #include <inttypes.h>
 
 static inline uint32_t load_3(const uint8_t *in)
@@ -18,7 +18,7 @@ static inline uint32_t load_2(const uint8_t *in)
   return ret;
 }
 
-void fe_frombytes(fe z, const uint8_t *in)
+void fe12_frombytes(fe12 z, const uint8_t *in)
 {
     uint32_t z0  = load_3(in);
     uint32_t z1  = load_3(in +  3) << 2;
@@ -61,7 +61,7 @@ void fe_frombytes(fe z, const uint8_t *in)
     z[11] = (double)z11 * 0x1p234;
 }
 
-void fe_squeeze(fe z)
+void fe12_squeeze(fe12 z)
 {
     // Interleave two carry chains (8 rounds):
     //   - a: z[0] -> z[1] -> z[2] -> z[3] -> z[4]  -> z[5]  -> z[6] -> z[7]
@@ -124,7 +124,7 @@ void fe_squeeze(fe z)
     z[2] += t1;
 }
 
-void fe_mul(fe h, const fe f, const fe g)
+void fe12_mul(fe12 h, const fe12 f, const fe12 g)
 {
     // Precompute reduced g values
     const double  g1_19 = 0x13p-255 * g[ 1];
@@ -296,77 +296,77 @@ void fe_mul(fe h, const fe f, const fe g)
     h[10] += f[11] * g11_19;
     h[11] += f[11] * g[ 0];
 
-    fe_squeeze(h);
+    fe12_squeeze(h);
 }
 
-void fe_square(fe h, const fe f)
+void fe12_square(fe12 h, const fe12 f)
 {
-    fe_mul(h, f, f);
+    fe12_mul(h, f, f);
 }
 
-void fe_invert(fe out, const fe z)
+void fe12_invert(fe12 out, const fe12 z)
 {
-	fe z2;
-	fe z9;
-	fe z11;
-	fe z2_5_0;
-	fe z2_10_0;
-	fe z2_20_0;
-	fe z2_50_0;
-	fe z2_100_0;
-	fe t0;
-	fe t1;
+	fe12 z2;
+	fe12 z9;
+	fe12 z11;
+	fe12 z2_5_0;
+	fe12 z2_10_0;
+	fe12 z2_20_0;
+	fe12 z2_50_0;
+	fe12 z2_100_0;
+	fe12 t0;
+	fe12 t1;
 	unsigned int i;
 
-	/* 2 */ fe_square(z2,z);
-	/* 4 */ fe_square(t1,z2);
-	/* 8 */ fe_square(t0,t1);
-	/* 9 */ fe_mul(z9,t0,z);
-	/* 11 */ fe_mul(z11,z9,z2);
-	/* 22 */ fe_square(t0,z11);
-	/* 2^5 - 2^0 = 31 */ fe_mul(z2_5_0,t0,z9);
+	/* 2 */ fe12_square(z2,z);
+	/* 4 */ fe12_square(t1,z2);
+	/* 8 */ fe12_square(t0,t1);
+	/* 9 */ fe12_mul(z9,t0,z);
+	/* 11 */ fe12_mul(z11,z9,z2);
+	/* 22 */ fe12_square(t0,z11);
+	/* 2^5 - 2^0 = 31 */ fe12_mul(z2_5_0,t0,z9);
 
-	/* 2^6 - 2^1 */ fe_square(t0,z2_5_0);
-	/* 2^7 - 2^2 */ fe_square(t1,t0);
-	/* 2^8 - 2^3 */ fe_square(t0,t1);
-	/* 2^9 - 2^4 */ fe_square(t1,t0);
-	/* 2^10 - 2^5 */ fe_square(t0,t1);
-	/* 2^10 - 2^0 */ fe_mul(z2_10_0,t0,z2_5_0);
+	/* 2^6 - 2^1 */ fe12_square(t0,z2_5_0);
+	/* 2^7 - 2^2 */ fe12_square(t1,t0);
+	/* 2^8 - 2^3 */ fe12_square(t0,t1);
+	/* 2^9 - 2^4 */ fe12_square(t1,t0);
+	/* 2^10 - 2^5 */ fe12_square(t0,t1);
+	/* 2^10 - 2^0 */ fe12_mul(z2_10_0,t0,z2_5_0);
 
-	/* 2^11 - 2^1 */ fe_square(t0,z2_10_0);
-	/* 2^12 - 2^2 */ fe_square(t1,t0);
-	/* 2^20 - 2^10 */ for (i = 2;i < 10;i += 2) { fe_square(t0,t1); fe_square(t1,t0); }
-	/* 2^20 - 2^0 */ fe_mul(z2_20_0,t1,z2_10_0);
+	/* 2^11 - 2^1 */ fe12_square(t0,z2_10_0);
+	/* 2^12 - 2^2 */ fe12_square(t1,t0);
+	/* 2^20 - 2^10 */ for (i = 2;i < 10;i += 2) { fe12_square(t0,t1); fe12_square(t1,t0); }
+	/* 2^20 - 2^0 */ fe12_mul(z2_20_0,t1,z2_10_0);
 
-	/* 2^21 - 2^1 */ fe_square(t0,z2_20_0);
-	/* 2^22 - 2^2 */ fe_square(t1,t0);
-	/* 2^40 - 2^20 */ for (i = 2;i < 20;i += 2) { fe_square(t0,t1); fe_square(t1,t0); }
-	/* 2^40 - 2^0 */ fe_mul(t0,t1,z2_20_0);
+	/* 2^21 - 2^1 */ fe12_square(t0,z2_20_0);
+	/* 2^22 - 2^2 */ fe12_square(t1,t0);
+	/* 2^40 - 2^20 */ for (i = 2;i < 20;i += 2) { fe12_square(t0,t1); fe12_square(t1,t0); }
+	/* 2^40 - 2^0 */ fe12_mul(t0,t1,z2_20_0);
 
-	/* 2^41 - 2^1 */ fe_square(t1,t0);
-	/* 2^42 - 2^2 */ fe_square(t0,t1);
-	/* 2^50 - 2^10 */ for (i = 2;i < 10;i += 2) { fe_square(t1,t0); fe_square(t0,t1); }
-	/* 2^50 - 2^0 */ fe_mul(z2_50_0,t0,z2_10_0);
+	/* 2^41 - 2^1 */ fe12_square(t1,t0);
+	/* 2^42 - 2^2 */ fe12_square(t0,t1);
+	/* 2^50 - 2^10 */ for (i = 2;i < 10;i += 2) { fe12_square(t1,t0); fe12_square(t0,t1); }
+	/* 2^50 - 2^0 */ fe12_mul(z2_50_0,t0,z2_10_0);
 
-	/* 2^51 - 2^1 */ fe_square(t0,z2_50_0);
-	/* 2^52 - 2^2 */ fe_square(t1,t0);
-	/* 2^100 - 2^50 */ for (i = 2;i < 50;i += 2) { fe_square(t0,t1); fe_square(t1,t0); }
-	/* 2^100 - 2^0 */ fe_mul(z2_100_0,t1,z2_50_0);
+	/* 2^51 - 2^1 */ fe12_square(t0,z2_50_0);
+	/* 2^52 - 2^2 */ fe12_square(t1,t0);
+	/* 2^100 - 2^50 */ for (i = 2;i < 50;i += 2) { fe12_square(t0,t1); fe12_square(t1,t0); }
+	/* 2^100 - 2^0 */ fe12_mul(z2_100_0,t1,z2_50_0);
 
-	/* 2^101 - 2^1 */ fe_square(t1,z2_100_0);
-	/* 2^102 - 2^2 */ fe_square(t0,t1);
-	/* 2^200 - 2^100 */ for (i = 2;i < 100;i += 2) { fe_square(t1,t0); fe_square(t0,t1); }
-	/* 2^200 - 2^0 */ fe_mul(t1,t0,z2_100_0);
+	/* 2^101 - 2^1 */ fe12_square(t1,z2_100_0);
+	/* 2^102 - 2^2 */ fe12_square(t0,t1);
+	/* 2^200 - 2^100 */ for (i = 2;i < 100;i += 2) { fe12_square(t1,t0); fe12_square(t0,t1); }
+	/* 2^200 - 2^0 */ fe12_mul(t1,t0,z2_100_0);
 
-	/* 2^201 - 2^1 */ fe_square(t0,t1);
-	/* 2^202 - 2^2 */ fe_square(t1,t0);
-	/* 2^250 - 2^50 */ for (i = 2;i < 50;i += 2) { fe_square(t0,t1); fe_square(t1,t0); }
-	/* 2^250 - 2^0 */ fe_mul(t0,t1,z2_50_0);
+	/* 2^201 - 2^1 */ fe12_square(t0,t1);
+	/* 2^202 - 2^2 */ fe12_square(t1,t0);
+	/* 2^250 - 2^50 */ for (i = 2;i < 50;i += 2) { fe12_square(t0,t1); fe12_square(t1,t0); }
+	/* 2^250 - 2^0 */ fe12_mul(t0,t1,z2_50_0);
 
-	/* 2^251 - 2^1 */ fe_square(t1,t0);
-	/* 2^252 - 2^2 */ fe_square(t0,t1);
-	/* 2^253 - 2^3 */ fe_square(t1,t0);
-	/* 2^254 - 2^4 */ fe_square(t0,t1);
-	/* 2^255 - 2^5 */ fe_square(t1,t0);
-	/* 2^255 - 21 */ fe_mul(out,t1,z11);
+	/* 2^251 - 2^1 */ fe12_square(t1,t0);
+	/* 2^252 - 2^2 */ fe12_square(t0,t1);
+	/* 2^253 - 2^3 */ fe12_square(t1,t0);
+	/* 2^254 - 2^4 */ fe12_square(t0,t1);
+	/* 2^255 - 2^5 */ fe12_square(t1,t0);
+	/* 2^255 - 21 */ fe12_mul(out,t1,z11);
 }
