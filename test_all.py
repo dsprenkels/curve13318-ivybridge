@@ -17,25 +17,25 @@ from hypothesis import example, given, strategies as st
 ref12 = ctypes.CDLL(os.path.join(os.path.abspath('.'), 'libref12.so'))
 
 # Define functions
-fe_frombytes = ref12.crypto_scalarmult_curve13318_ref12_fe_frombytes
-fe_frombytes.argtypes = [ctypes.c_double * 12, ctypes.c_ubyte * 32]
-# fe_tobytes = ref12.crypto_scalarmult_curve13318_ref12_fe_tobytes
-# fe_tobytes.argtypes = [ctypes.c_ubyte * 32, ctypes.c_double * 12]
-fe_squeeze = ref12.crypto_scalarmult_curve13318_ref12_fe_squeeze
-fe_squeeze.argtypes = [ctypes.c_double * 12]
-fe_mul = ref12.crypto_scalarmult_curve13318_ref12_fe_mul
-fe_mul.argtypes = [ctypes.c_double * 12] * 3
-fe_square = ref12.crypto_scalarmult_curve13318_ref12_fe_square
-fe_square.argtypes = [ctypes.c_double * 12] * 2
-fe_invert = ref12.crypto_scalarmult_curve13318_ref12_fe_invert
-fe_invert.argtypes = [ctypes.c_double * 12] * 2
-# fe_reduce = ref12.crypto_scalarmult_curve13318_ref12_fe_reduce
-# fe_reduce.argtypes = [ctypes.c_double * 12]
+fe12_frombytes = ref12.crypto_scalarmult_curve13318_ref12_fe12_frombytes
+fe12_frombytes.argtypes = [ctypes.c_double * 12, ctypes.c_ubyte * 32]
+# fe12_tobytes = ref12.crypto_scalarmult_curve13318_ref12_fe12_tobytes
+# fe12_tobytes.argtypes = [ctypes.c_ubyte * 32, ctypes.c_double * 12]
+fe12_squeeze = ref12.crypto_scalarmult_curve13318_ref12_fe12_squeeze
+fe12_squeeze.argtypes = [ctypes.c_double * 12]
+fe12_mul = ref12.crypto_scalarmult_curve13318_ref12_fe12_mul
+fe12_mul.argtypes = [ctypes.c_double * 12] * 3
+fe12_square = ref12.crypto_scalarmult_curve13318_ref12_fe12_square
+fe12_square.argtypes = [ctypes.c_double * 12] * 2
+fe12_invert = ref12.crypto_scalarmult_curve13318_ref12_fe12_invert
+fe12_invert.argtypes = [ctypes.c_double * 12] * 2
+# fe12_reduce = ref12.crypto_scalarmult_curve13318_ref12_fe12_reduce
+# fe12_reduce.argtypes = [ctypes.c_double * 12]
 
-def fe_val(z):
+def fe12_val(z):
     return sum(int(x) for x in z)
 
-class TestFE(unittest.TestCase):
+class TestFE12(unittest.TestCase):
     st_unsqueezed = st.lists(
         st.integers(-0.99 * 2**53, 0.99 * 2**53), min_size=12, max_size=12)
     st_squeezed_0 = st.tuples(
@@ -66,7 +66,7 @@ class TestFE(unittest.TestCase):
     def setUp(self):
         self.F = FiniteField(P)
 
-    def make_fe(self, limbs=[]):
+    def make_fe12(self, limbs=[]):
         """Encode the number in its C representation"""
         z = self.F(0)
         z_c = (ctypes.c_double * 12)(0.0)
@@ -82,15 +82,15 @@ class TestFE(unittest.TestCase):
     def test_frombytes(self, s):
         expected = sum(self.F(x) * 2**(8*i) for i,x in enumerate(s))
         s_c = (ctypes.c_ubyte * 32)(*s)
-        _, z_c = self.make_fe()
-        fe_frombytes(z_c, s_c)
+        _, z_c = self.make_fe12()
+        fe12_frombytes(z_c, s_c)
         actual = sum(self.F(int(x)) for x in z_c)
         self.assertEqual(actual, expected)
 
     @given(st_unsqueezed)
     def test_squeeze(self, limbs):
-        expected, z_c = self.make_fe(limbs)
-        fe_squeeze(z_c)
+        expected, z_c = self.make_fe12(limbs)
+        fe12_squeeze(z_c)
 
         # Are all limbs reduced?
         shift = 0
@@ -107,29 +107,29 @@ class TestFE(unittest.TestCase):
     def test_mul(self, f_limbs, g_limbs, swap):
         if swap:
             f_limbs, g_limbs = g_limbs, f_limbs
-        f, f_c = self.make_fe(f_limbs)
-        g, g_c = self.make_fe(g_limbs)
-        _, h_c = self.make_fe()
+        f, f_c = self.make_fe12(f_limbs)
+        g, g_c = self.make_fe12(g_limbs)
+        _, h_c = self.make_fe12()
         expected = f * g
-        fe_mul(h_c, f_c, g_c)
+        fe12_mul(h_c, f_c, g_c)
         actual = sum(self.F(int(x)) for x in h_c)
         self.assertEqual(actual, expected)
 
     @given(st_squeezed_0)
     def test_square(self, f_limbs):
-        f, f_c = self.make_fe(f_limbs)
-        _, h_c = self.make_fe()
+        f, f_c = self.make_fe12(f_limbs)
+        _, h_c = self.make_fe12()
         expected = f**2
-        fe_square(h_c, f_c)
+        fe12_square(h_c, f_c)
         actual = sum(self.F(int(x)) for x in h_c)
         self.assertEqual(actual, expected)
 
     @given(st_squeezed_0)
     def test_invert(self, f_limbs):
-        f, f_c = self.make_fe(f_limbs)
-        _, h_c = self.make_fe()
+        f, f_c = self.make_fe12(f_limbs)
+        _, h_c = self.make_fe12()
         expected = f**-1 if f != 0 else 0
-        fe_invert(h_c, f_c)
+        fe12_invert(h_c, f_c)
         actual = sum(self.F(int(x)) for x in h_c)
         self.assertEqual(actual, expected)
 
