@@ -1,4 +1,65 @@
 #include "fe.h"
+#include <inttypes.h>
+
+static inline uint32_t load_3(const uint8_t *in)
+{
+  uint32_t ret;
+  ret = (uint32_t) in[0];
+  ret |= ((uint32_t) in[1]) << 8;
+  ret |= ((uint32_t) in[2]) << 16;
+  return ret;
+}
+
+static inline uint32_t load_2(const uint8_t *in)
+{
+  uint32_t ret;
+  ret = (uint32_t) in[0];
+  ret |= ((uint32_t) in[1]) << 8;
+  return ret;
+}
+
+void fe_frombytes(fe z, const uint8_t *in)
+{
+    uint32_t z0  = load_3(in);
+    uint32_t z1  = load_3(in +  3) << 2;
+    uint32_t z2  = load_2(in +  6) << 5;
+    uint32_t z3  = load_3(in +  8);
+    uint32_t z4  = load_3(in + 11) << 3;
+    uint32_t z5  = load_2(in + 14) << 5;
+    uint32_t z6  = load_3(in + 16);
+    uint32_t z7  = load_3(in + 19) << 3;
+    uint32_t z8  = load_2(in + 22) << 6;
+    uint32_t z9  = load_3(in + 24);
+    uint32_t z10 = load_3(in + 27) << 3;
+    uint32_t z11 = load_2(in + 30) << 6;
+
+    uint32_t carry11 = z11 >> 21;  z0 += 19 * carry11; z11 &= 0x1FFFFF;
+    uint32_t  carry1 =  z1 >> 21;  z2 += carry1; z1 &= 0x1FFFFF;
+    uint32_t  carry3 =  z3 >> 21;  z4 += carry3; z3 &= 0x1FFFFF;
+    uint32_t  carry5 =  z5 >> 21;  z6 += carry5; z5 &= 0x1FFFFF;
+    uint32_t  carry7 =  z7 >> 21;  z8 += carry7; z7 &= 0x1FFFFF;
+    uint32_t  carry9 =  z9 >> 21; z10 += carry9; z9 &= 0x1FFFFF;
+
+    uint32_t  carry0 =  z0 >> 22;  z1 += carry0; z0 &= 0x3FFFFF;
+    uint32_t  carry2 =  z2 >> 21;  z2 += carry2; z2 &= 0x1FFFFF;
+    uint32_t  carry4 =  z4 >> 22;  z5 += carry4; z4 &= 0x3FFFFF;
+    uint32_t  carry6 =  z6 >> 21;  z7 += carry6; z6 &= 0x1FFFFF;
+    uint32_t  carry8 =  z8 >> 22;  z9 += carry8; z8 &= 0x3FFFFF;
+    uint32_t carry10 = z10 >> 21; z11 += carry10; z10 &= 0x1FFFFF;
+
+    z[0] =  (double)z0;
+    z[1] =  (double)z1 * 0x1p22;
+    z[2] =  (double)z2 * 0x1p43;
+    z[3] =  (double)z3 * 0x1p64;
+    z[4] =  (double)z4 * 0x1p85;
+    z[5] =  (double)z5 * 0x1p107;
+    z[6] =  (double)z6 * 0x1p128;
+    z[7] =  (double)z7 * 0x1p149;
+    z[8] =  (double)z8 * 0x1p170;
+    z[9] =  (double)z9 * 0x1p192;
+    z[10] = (double)z10 * 0x1p213;
+    z[11] = (double)z11 * 0x1p234;
+}
 
 void fe_squeeze(fe z)
 {
