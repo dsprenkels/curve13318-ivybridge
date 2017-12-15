@@ -40,7 +40,6 @@ Bernstein, D. J. & Schwabe, P. Prouff, E. & Schaumont, P. (Eds.)
 typedef double fe12[12];
 
 #define fe12_frombytes crypto_scalarmult_curve13318_ref12_fe12_frombytes
-#define fe12_tobytes crypto_scalarmult_curve13318_ref12_fe12_tobytes
 #define fe12_zero crypto_scalarmult_curve13318_ref12_fe12_zero
 #define fe12_one crypto_scalarmult_curve13318_ref12_fe12_one
 #define fe12_copy crypto_scalarmult_curve13318_ref12_fe12_copy
@@ -52,7 +51,6 @@ typedef double fe12[12];
 #define fe12_invert crypto_scalarmult_curve13318_ref12_fe12_invert
 #define fe12_add_b crypto_scalarmult_curve13318_ref12_fe12_add_b
 #define fe12_mul_b crypto_scalarmult_curve13318_ref12_fe12_mul_b
-#define fe12_reduce crypto_scalarmult_curve13318_ref12_fe12_reduce
 
 /*
 Set a fe12 value to zero
