@@ -26,8 +26,10 @@ static const uint64_t _4PRestB26 = 0x0FFFFFFC;
 static const uint64_t _CURVE13318_B = 13318;
 static const uint64_t _MASK25 = 0xFFFFFFFFFE000000;
 static const uint64_t _MASK26 = 0xFFFFFFFFFC000000;
+static const uint64_t _MASK51 = 0xFFF8000000000000;
 
 typedef uint64_t fe10[10];
+typedef uint64_t fe10_frozen[5];
 
 #define fe10_frombytes crypto_scalarmult_curve13318_ref12_fe10_frombytes
 #define fe10_tobytes crypto_scalarmult_curve13318_ref12_fe10_tobytes
@@ -148,7 +150,7 @@ extern void fe10_invert(fe10 dest, const fe10 element);
 /*
 Reduce an element s.t. the result is always in [0, 2^255-19⟩
 */
-extern void fe10_reduce(fe10 element);
+extern void fe10_reduce(fe10_frozen out, const fe10 element);
 
 /*
 Add 13318 to `z`

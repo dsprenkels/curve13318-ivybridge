@@ -38,6 +38,7 @@ Bernstein, D. J. & Schwabe, P. Prouff, E. & Schaumont, P. (Eds.)
 #include <inttypes.h>
 
 typedef double fe12[12];
+typedef double fe12_frozen[6];
 
 #define fe12_frombytes crypto_scalarmult_curve13318_ref12_fe12_frombytes
 #define fe12_zero crypto_scalarmult_curve13318_ref12_fe12_zero
@@ -49,6 +50,7 @@ typedef double fe12[12];
 #define fe12_mul crypto_scalarmult_curve13318_ref12_fe12_mul
 #define fe12_square crypto_scalarmult_curve13318_ref12_fe12_square
 #define fe12_invert crypto_scalarmult_curve13318_ref12_fe12_invert
+#define fe12_freeze crypto_scalarmult_curve13318_ref12_fe12_freeze
 #define fe12_add_b crypto_scalarmult_curve13318_ref12_fe12_add_b
 #define fe12_mul_b crypto_scalarmult_curve13318_ref12_fe12_mul_b
 
@@ -94,11 +96,6 @@ Parse 32 bytes into a `fe12` type
 extern void fe12_frombytes(fe12 element, const uint8_t *bytes);
 
 /*
-Store a field element type into memory
-*/
-extern void fe12_tobytes(uint8_t *bytes, fe12 element);
-
-/*
 Carry ripple this field element
 */
 extern void fe12_squeeze(fe12 element);
@@ -119,6 +116,12 @@ Invert an element modulo 2^255 - 19
 extern void fe12_invert(fe12 dest, const fe12 element);
 
 /*
+Reduce an element s.t. the result is always in [0, 2^255-19⟩. Input must
+be squeezed
+*/
+extern void fe12_freeze(fe12_frozen out, const fe12 element);
+
+/*
 Add 13318 to `z`
 */
 static inline void fe12_add_b(fe12 z) {
@@ -132,10 +135,5 @@ static inline void fe12_mul_b(fe12 h, fe12 f) {
     for (unsigned int i = 0; i < 12; i++) h[i] = 13318 * f[i];
     fe12_squeeze(h);
 }
-
-/*
-Reduce an element s.t. the result is always in [0, 2^255-19⟩
-*/
-extern void fe12_reduce(fe12 element);
 
 #endif /* REF12_FE12_H_ */
