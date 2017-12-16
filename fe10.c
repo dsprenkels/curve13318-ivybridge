@@ -4,52 +4,46 @@
 /*
 Store a into a field element (fe10) into a bytestring
 */
-void fe10_tobytes(uint8_t *s, fe10 z)
+void fe10_tobytes(uint8_t *s, fe10 z_unfrozen)
 {
+    fe10_frozen z;
+
     // Reduce x and y mod p
-    fe10_reduce(z);
+    fe10_reduce(z, z_unfrozen);
 
     // Store the values to `s`
-    s[ 0]  = z[0];
-    s[ 1]  = z[0] >>  8;
-    s[ 2]  = z[0] >> 16;
-    s[ 3]  = z[0] >> 24;
-    s[ 3] += z[1] <<  2;
-    s[ 4]  = z[1] >>  6;
-    s[ 5]  = z[1] >> 14;
-    s[ 6]  = z[1] >> 22;
-    s[ 6] += z[2] <<  3;
-    s[ 7]  = z[2] >>  5;
-    s[ 8]  = z[2] >> 13;
-    s[ 9]  = z[2] >> 21;
-    s[ 9] += z[3] <<  5;
-    s[10]  = z[3] >>  3;
-    s[11]  = z[3] >> 11;
-    s[12]  = z[3] >> 19;
-    s[12] += z[4] <<  6;
-    s[13]  = z[4] >>  2;
-    s[14]  = z[4] >> 10;
-    s[15]  = z[4] >> 18;
-    s[16]  = z[5];
-    s[17]  = z[5] >>  8;
-    s[18]  = z[5] >> 16;
-    s[19]  = z[5] >> 24;
-    s[19] += z[6] <<  1;
-    s[20]  = z[6] >>  7;
-    s[21]  = z[6] >> 15;
-    s[22]  = z[6] >> 23;
-    s[22] += z[7] <<  3;
-    s[23]  = z[7] >>  5;
-    s[24]  = z[7] >> 13;
-    s[25]  = z[7] >> 21;
-    s[25] += z[8] <<  4;
-    s[26]  = z[8] >>  4;
-    s[27]  = z[8] >> 12;
-    s[28]  = z[8] >> 20;
-    s[28] += z[9] <<  6;
-    s[29]  = z[9] >>  2;
-    s[30]  = z[9] >> 10;
-    s[31]  = z[9] >> 18;
+    s[ 0] =  z[0];
+    s[ 1] =  z[0] >> 8;
+    s[ 2] =  z[0] >> 16;
+    s[ 3] =  z[0] >> 24;
+    s[ 4] =  z[0] >> 32;
+    s[ 5] =  z[0] >> 40;
+    s[ 6] = (z[0] >> 48) + (z[1] << 3);
+    s[ 7] =  z[1] >> 5;
+    s[ 8] =  z[1] >> 13;
+    s[ 9] =  z[1] >> 21;
+    s[10] =  z[1] >> 29;
+    s[11] =  z[1] >> 37;
+    s[12] = (z[1] >> 45) + (z[2] << 6);
+    s[13] =  z[2] >> 2;
+    s[14] =  z[2] >> 10;
+    s[15] =  z[2] >> 18;
+    s[16] =  z[2] >> 26;
+    s[17] =  z[2] >> 34;
+    s[18] =  z[2] >> 42;
+    s[19] = (z[2] >> 50) + (z[3] << 1);
+    s[20] =  z[3] >> 7;
+    s[21] =  z[3] >> 15;
+    s[22] =  z[3] >> 23;
+    s[23] =  z[3] >> 31;
+    s[24] =  z[3] >> 39;
+    s[25] = (z[3] >> 47) + (z[4] << 4);
+    s[26] =  z[4] >> 4;
+    s[27] =  z[4] >> 12;
+    s[28] =  z[4] >> 20;
+    s[29] =  z[4] >> 28;
+    s[30] =  z[4] >> 36;
+    s[31] =  z[4] >> 44;
 }
 
 void fe10_mul(fe10 h, const fe10 f, const fe10 g)
@@ -322,100 +316,57 @@ void fe10_invert(fe10 out, const fe10 z)
 Set z = if (z > p)  z - p,
         otherwise   z
 */
-void fe10_reduce(fe10 z)
+void fe10_reduce(fe10_frozen z, const fe10 in)
 {
     /*
     `fe10_carry` ensures that an element `z` is always in range [0, 2^256⟩.
     So we either have to reduce by `p` if `z` ∈ [p, 2^256 - 38⟩  or by `2*p`
     if `z` ∈ [2^256 - 38, 2^256⟩.
 
-    Instead of diffe10rentiating between these two conditionals we will perform
+    Instead of differentiating between these two conditionals we will perform
     a conditional reduction by `p` twice.
     */
-    uint64_t t, carry19, carry38, do_reduce;
+    uint64_t t, carry, do_reduce;
 
-    carry38 = z[0] + 38; // Round 1a
-    carry38 >>= 26;
-    carry19 = z[0] + 19; // Round 1b
-    carry19 >>= 26;
-    carry38 += z[1]; // Round 2a
-    carry38 >>= 25;
-    carry19 += z[1]; // Round 2b
-    carry19 >>= 25;
-    carry38 += z[2]; // Round 3a
-    carry38 >>= 26;
-    carry19 += z[2]; // Round 3b
-    carry19 >>= 26;
-    carry38 += z[3]; // Round 4a
-    carry38 >>= 25;
-    carry19 += z[3]; // Round 4b
-    carry19 >>= 25;
-    carry38 += z[4]; // Round 5a
-    carry38 >>= 26;
-    carry19 += z[4]; // Round 5b
-    carry19 >>= 26;
-    carry38 += z[5]; // Round 6a
-    carry38 >>= 25;
-    carry19 += z[5]; // Round 6b
-    carry19 >>= 25;
-    carry38 += z[6]; // Round 7a
-    carry38 >>= 26;
-    carry19 += z[6]; // Round 7b
-    carry19 >>= 26;
-    carry38 += z[7]; // Round 8a
-    carry38 >>= 25;
-    carry19 += z[7]; // Round 8b
-    carry19 >>= 25;
-    carry38 += z[8]; // Round 9a
-    carry38 >>= 26;
-    carry19 += z[8]; // Round 9b
-    carry19 >>= 26;
-    carry38 += z[9]; // Round 10a
-    carry19 += z[9]; // Round 10b
+    // We are done with multiplications, move to radix-2^51
+    z[0] = in[0] + (in[1] << 26);
+    z[1] = in[2] + (in[3] << 26);
+    z[2] = in[4] + (in[5] << 26);
+    z[3] = in[6] + (in[7] << 26);
+    z[4] = in[8] + (in[9] << 26);
 
-    // Maybe add -2*p
-    do_reduce = carry38 & 0x4000000;         // 2^26 or 0
-    do_reduce <<= 37;                        // 2^63 or 0
-    do_reduce = ((int64_t) do_reduce) >> 63; // 0xff... or 0x00...
-    z[0] += do_reduce & 38;
+    carry = 19;
+    carry += z[0];
+    carry >>= 51;
+    carry += z[1];
+    carry >>= 51;
+    carry += z[2];
+    carry >>= 51;
+    carry += z[3];
+    carry >>= 51;
+    carry += z[4];
 
     // Maybe add -p
-    do_reduce ^= 0xFFFFFFFFFFFFFFFF;         // Do not reduce by 3*p!
-    do_reduce &= carry19 & 0x2000000;        // 2^25 or 0
-    z[9] += do_reduce;                       // Maybe add 2^255
-    do_reduce <<= 38;                        // 2^63 or 0
+    do_reduce = carry & 0x8000000000000;     // 2^51 or 0
+    z[4] ^= do_reduce;                       // Maybe add 2^255
+    do_reduce <<= 12;                        // 2^63 or 0
     do_reduce = ((int64_t) do_reduce) >> 63; // 0xff... or 0x00...
     z[0] += do_reduce & 19;                  // Maybe add 19
 
     // In constract to `fe10_carry`, this function needs to carry the elements
     // `z` modulo `2^256`, i.e. *not* modulo `p`.
-    t = z[0] & _MASK26;
+    t = z[0] & _MASK51;
     z[0] ^= t;
-    z[1] += t >> 26;
-    t = z[1] & _MASK25;
+    z[1] += t >> 51;
+    t = z[1] & _MASK51;
     z[1] ^= t;
-    z[2] += t >> 25;
-    t = z[2] & _MASK26;
+    z[2] += t >> 51;
+    t = z[2] & _MASK51;
     z[2] ^= t;
-    z[3] += t >> 26;
-    t = z[3] & _MASK25;
+    z[3] += t >> 51;
+    t = z[3] & _MASK51;
     z[3] ^= t;
-    z[4] += t >> 25;
-    t = z[4] & _MASK26;
+    z[4] += t >> 51;
+    t = z[4] & _MASK51;
     z[4] ^= t;
-    z[5] += t >> 26;
-    t = z[5] & _MASK25;
-    z[5] ^= t;
-    z[6] += t >> 25;
-    t = z[6] & _MASK26;
-    z[6] ^= t;
-    z[7] += t >> 26;
-    t = z[7] & _MASK25;
-    z[7] ^= t;
-    z[8] += t >> 25;
-    t = z[8] & _MASK26;
-    z[8] ^= t;
-    z[9] += t >> 26;
-    t = z[9] & _MASK26;
-    z[9] ^= t;
 }
