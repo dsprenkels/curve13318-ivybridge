@@ -50,8 +50,8 @@ convert_fe12_to_fe10 = ref12.crypto_scalarmult_curve13318_ref12_convert_fe12_to_
 convert_fe12_to_fe10.argtypes = [fe10_type, fe12_type]
 ge_frombytes = ref12.crypto_scalarmult_curve13318_ref12_ge_frombytes
 ge_frombytes.argtypes = [ge_type, ctypes.c_ubyte * 64]
-# ge_tobytes = ref12.crypto_scalarmult_curve13318_ref12_ge_tobytes
-# ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ctypes.c_uint64 * 30]
+ge_tobytes = ref12.crypto_scalarmult_curve13318_ref12_ge_tobytes
+ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ge_type]
 # ge_add = ref12.crypto_scalarmult_curve13318_ref12_ge_add
 # ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
 
@@ -213,21 +213,20 @@ class TestConvert(unittest.TestCase):
             assert(0 <= limb <= 2**26)
 
 class TestGE(unittest.TestCase):
+    @staticmethod
     def encode_point(x, y, z):
         """Encode a point in its C representation"""
         shift = 0
-        x_limbs, y_limbs, z_limbs = [0]*10, [0]*10, [0]*10
-        for i in range(10):
-            mask_width = 26 if i % 2 == 0 else 25
-            x_limbs[i] = (2**mask_width - 1) & (x.lift() >> shift)
-            y_limbs[i] = (2**mask_width - 1) & (y.lift() >> shift)
-            z_limbs[i] = (2**mask_width - 1) & (z.lift() >> shift)
+        x_c = fe12_type(0)
+        y_c = fe12_type(0)
+        z_c = fe12_type(0)
+        for i in range(12):
+            mask_width = 22 if i % 4 == 0 else 21
+            x_c[i] = float((2**mask_width - 1) & x.lift() >> shift) * 2**shift
+            y_c[i] = float((2**mask_width - 1) & y.lift() >> shift) * 2**shift
+            z_c[i] = float((2**mask_width - 1) & z.lift() >> shift) * 2**shift
             shift += mask_width
-
-        p = (ctypes.c_uint64 * 30)(0)
-        for i, limb in enumerate(x_limbs + y_limbs + z_limbs):
-            p[i] = limb
-        return p
+        return ge_type(x_c, y_c, z_c)
 
     @staticmethod
     def decode_point(point):
@@ -290,6 +289,26 @@ class TestGE(unittest.TestCase):
         self.assertEqual(actual_x, x)
         self.assertEqual(actual_y, y)
         self.assertEqual(actual_z, z)
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
+    @example(0, 0, 1) # a point at infinity
+    @example(0, P, 1)
+    @example(0, 2*P, 1)
+    def test_tobytes(self, x, z, sign):
+        (x, y, z), point = make_ge(x, z, sign)
+        c_point = self.encode_point(x, y, z)
+        c_bytes = (ctypes.c_ubyte * 64)(0)
+        ge_tobytes(c_bytes, c_point)
+
+        if z != 0:
+            expected_x, expected_y = point.xy()
+        else:
+            expected_x, expected_y = F(0), F(0)
+
+        actual_x, actual_y = self.decode_bytes(c_bytes)
+        self.assertEqual(actual_x, expected_x)
+        self.assertEqual(actual_y, expected_y)
 
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
            st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
