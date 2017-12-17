@@ -343,22 +343,45 @@ class TestGE(unittest.TestCase):
         x1, y1, z1 = F(x1), F(y1), F(z1)
         x2, y2, z2 = F(x2), F(y2), F(z2)
         b = 13318
-        t0 = x1 * x2;        t1 = y1 * y2;        t2 = z1 * z2
-        t3 = x1 + y1;        t4 = x2 + y2;        t3 = t3 * t4
-        t4 = t0 + t1;        t3 = t3 - t4;        t4 = y1 + z1
-        x3 = y2 + z2;        t4 = t4 * x3;        x3 = t1 + t2
-        t4 = t4 - x3;        x3 = x1 + z1;        y3 = x2 + z2
-        x3 = x3 * y3;        y3 = t0 + t2;        y3 = x3 - y3
-        z3 =  b * t2;        x3 = y3 - z3;        z3 = x3 + x3
-        x3 = x3 + z3;        z3 = t1 - x3;        x3 = t1 + x3
-        y3 =  b * y3;        t1 = t2 + t2;        t2 = t1 + t2
-        y3 = y3 - t2;        y3 = y3 - t0;        t1 = y3 + y3
-        y3 = t1 + y3;        t1 = t0 + t0;        t0 = t1 + t0
-        t0 = t0 - t2;        t1 = t4 * y3;        t2 = t0 * y3
-        y3 = x3 * z3;        y3 = y3 + t2;        x3 = x3 * t3
-        x3 = x3 - t1;        z3 = z3 * t4;        t1 = t3 * t0
+        t0 = x1 * x2;       t1 = y1 * y2;       t2 = z1 * z2
+        t3 = x1 + y1;       t4 = x2 + y2;       t3 = t3 * t4
+        t4 = t0 + t1;       t3 = t3 - t4;       t4 = y1 + z1
+        x3 = y2 + z2;       t4 = t4 * x3;       x3 = t1 + t2
+        t4 = t4 - x3;       x3 = x1 + z1;       y3 = x2 + z2
+        x3 = x3 * y3;       y3 = t0 + t2;       y3 = x3 - y3
+        z3 =  b * t2;       x3 = y3 - z3;       z3 = x3 + x3
+        x3 = x3 + z3;       z3 = t1 - x3;       x3 = t1 + x3
+        y3 =  b * y3;       t1 = t2 + t2;       t2 = t1 + t2
+        y3 = y3 - t2;       y3 = y3 - t0;       t1 = y3 + y3
+        y3 = t1 + y3;       t1 = t0 + t0;       t0 = t1 + t0
+        t0 = t0 - t2;       t1 = t4 * y3;       t2 = t0 * y3
+        y3 = x3 * z3;       y3 = y3 + t2;       x3 = x3 * t3
+        x3 = x3 - t1;       z3 = z3 * t4;       t1 = t3 * t0
         z3 = z3 + t1
         self.assertEqual(E([x3, y3, z3]), point1 + point2)
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
+    @example(0, 0, 1)
+    def test_double_ref(self, x, z, sign):
+        (x, y, z), point = make_ge(x, z, sign)
+        note("testing: 2*{}".format(point))
+        note("locals(): {}".format(locals()))
+        x, y, z = F(x), F(y), F(z)
+        b = 13318
+        t0 =  x *  x;       t1 =  y *  y;       t2 =  z *  z
+        t3 =  x *  y;       t3 = t3 + t3;       z3 =  x *  z
+        z3 = z3 + z3;       y3 =  b * t2;       y3 = y3 - z3
+        x3 = y3 + y3;       y3 = x3 + y3;       x3 = t1 - y3
+        y3 = t1 + y3;       y3 = x3 * y3;       x3 = x3 * t3
+        t3 = t2 + t2;       t2 = t2 + t3;       z3 =  b * z3
+        z3 = z3 - t2;       z3 = z3 - t0;       t3 = z3 + z3
+        z3 = z3 + t3;       t3 = t0 + t0;       t0 = t3 + t0
+        t0 = t0 - t2;       t0 = t0 * z3;       y3 = y3 + t0
+        t0 =  y *  z;       t0 = t0 + t0;       z3 = t0 * z3
+        x3 = x3 - z3;       z3 = t0 * t1;       z3 = z3 + z3
+        z3 = z3 + z3;
+        self.assertEqual(E([x3, y3, z3]), 2*point)
 
 
 def make_fe12(limbs=[]):
