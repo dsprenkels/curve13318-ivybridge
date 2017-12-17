@@ -57,6 +57,4 @@ Double `point` into `dest`.
 */
 void ge_double(ge dest, const ge point);
 
-
-
 #endif /* CURVE13318_REF12_GE_H_ */

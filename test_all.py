@@ -52,8 +52,8 @@ ge_frombytes = ref12.crypto_scalarmult_curve13318_ref12_ge_frombytes
 ge_frombytes.argtypes = [ge_type, ctypes.c_ubyte * 64]
 ge_tobytes = ref12.crypto_scalarmult_curve13318_ref12_ge_tobytes
 ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ge_type]
-# ge_add = ref12.crypto_scalarmult_curve13318_ref12_ge_add
-# ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
+ge_add = ref12.crypto_scalarmult_curve13318_ref12_ge_add
+ge_add.argtypes = [ge_type] * 3
 
 
 # Custom testing strategies
@@ -309,6 +309,27 @@ class TestGE(unittest.TestCase):
         actual_x, actual_y = self.decode_bytes(c_bytes)
         self.assertEqual(actual_x, expected_x)
         self.assertEqual(actual_y, expected_y)
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @example(0, 0, 1, 0, 0, 1)
+    def test_add(self, x1, z1, sign1, x2, z2, sign2):
+        (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
+        (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
+        c_point1 = self.encode_point(x1, y1, z1)
+        c_point2 = self.encode_point(x2, y2, z2)
+        c_point3 = ge_type(fe12_type(0))
+        ge_add(c_point3, c_point1, c_point2)
+        x3, y3, z3 = self.decode_point(c_point3)
+        expected = point1 + point2
+        note("Expected: {}".format(expected))
+        note("Actual: ({} : {} : {})".format(x3, y3, z3))
+        if expected == E(0):
+            self.assertEqual(F(z3), 0)
+            return
+        actual = E([F(x3), F(y3), F(z3)])
+        self.assertEqual(actual, expected)
 
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
            st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
