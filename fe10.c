@@ -200,49 +200,49 @@ void fe10_carry(fe10 z)
     //   - z[2] is less than or equal to 2^26; z[0], z[4], z[6], z[8] narrower
     //   - z[7] is less than or equal to 2^25; z[1], z[3], z[5], z[9] narrower
 
-    uint64_t t;
-    t = z[0] & _MASK26; // Round 1a
-    z[0] ^= t;
-    z[1] += t >> 26;
-    t = z[5] & _MASK25; // Round 1b
-    z[5] ^= t;
-    z[6] += t >> 25;
-    t = z[1] & _MASK25; // Round 2a
-    z[1] ^= t;
-    z[2] += t >> 25;
-    t = z[6] & _MASK26; // Round 2b
-    z[6] ^= t;
-    z[7] += t >> 26;
-    t = z[2] & _MASK26; // Round 3a
-    z[2] ^= t;
-    z[3] += t >> 26;
-    t = z[7] & _MASK25; // Round 3b
-    z[7] ^= t;
-    z[8] += t >> 25;
-    t = z[3] & _MASK25; // Round 4a
-    z[3] ^= t;
-    z[4] += t >> 25;
-    t = z[8] & _MASK26; // Round 4b
-    z[8] ^= t;
-    z[9] += t >> 26;
-    t = z[4] & _MASK26; // Round 5a
-    z[4] ^= t;
-    z[5] += t >> 26;
-    t = z[9] & _MASK25; // Round 5b
-    z[9] ^= t;
-    z[0] += 19 * (t >> 25);
-    t = z[5] & _MASK25; // Round 6a
-    z[5] ^= t;
-    z[6] += t >> 25;
-    t = z[0] & _MASK26; // Round 6b
-    z[0] ^= t;
-    z[1] += t >> 26;
-    t = z[6] & _MASK26; // Round 7a
-    z[6] ^= t;
-    z[7] += t >> 26;
-    t = z[1] & _MASK25; // Round 7b :)
-    z[1] ^= t;
-    z[2] += t >> 25;
+    uint64_t t0, t1;
+    t0 = z[0] & _MASK26; // Round 1a
+    z[0] ^= t0;
+    z[1] += t0 >> 26;
+    t1 = z[5] & _MASK25; // Round 1b
+    z[5] ^= t1;
+    z[6] += t1 >> 25;
+    t0 = z[1] & _MASK25; // Round 2a
+    z[1] ^= t0;
+    z[2] += t0 >> 25;
+    t1 = z[6] & _MASK26; // Round 2b
+    z[6] ^= t1;
+    z[7] += t1 >> 26;
+    t0 = z[2] & _MASK26; // Round 3a
+    z[2] ^= t0;
+    z[3] += t0 >> 26;
+    t1 = z[7] & _MASK25; // Round 3b
+    z[7] ^= t1;
+    z[8] += t1 >> 25;
+    t0 = z[3] & _MASK25; // Round 4a
+    z[3] ^= t0;
+    z[4] += t0 >> 25;
+    t1 = z[8] & _MASK26; // Round 4b
+    z[8] ^= t1;
+    z[9] += t1 >> 26;
+    t0 = z[4] & _MASK26; // Round 5a
+    z[4] ^= t0;
+    z[5] += t0 >> 26;
+    t1 = z[9] & _MASK25; // Round 5b
+    z[9] ^= t1;
+    z[0] += 19 * (t1 >> 25);
+    t0 = z[5] & _MASK25; // Round 6a
+    z[5] ^= t0;
+    z[6] += t0 >> 25;
+    t1 = z[0] & _MASK26; // Round 6b
+    z[0] ^= t1;
+    z[1] += t1 >> 26;
+    t0 = z[6] & _MASK26; // Round 7a
+    z[6] ^= t0;
+    z[7] += t0 >> 26;
+    t1 = z[1] & _MASK25; // Round 7b :)
+    z[1] ^= t1;
+    z[2] += t1 >> 25;
 }
 
 void fe10_invert(fe10 out, const fe10 z)
