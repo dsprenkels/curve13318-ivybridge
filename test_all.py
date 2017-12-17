@@ -11,8 +11,9 @@ from sage.all import *
 
 P = 2**255 - 19
 F = FiniteField(P)
+E = EllipticCurve(F, [-3, 13318])
 
-from hypothesis import example, given, strategies as st
+from hypothesis import assume, example, given, note, strategies as st
 
 # Load shared libcurve13318 library
 ref12 = ctypes.CDLL(os.path.join(os.path.abspath('.'), 'libref12.so'))
@@ -22,6 +23,7 @@ fe12_type = ctypes.c_double * 12
 fe12_frozen_type = ctypes.c_double * 6
 fe10_type = ctypes.c_uint64 * 10
 fe10_frozen_type = ctypes.c_uint64 * 5
+ge_type = fe12_type * 3
 
 # Define functions
 fe12_frombytes = ref12.crypto_scalarmult_curve13318_ref12_fe12_frombytes
@@ -48,6 +50,13 @@ fe10_reduce = ref12.crypto_scalarmult_curve13318_ref12_fe10_reduce
 fe10_reduce.argtypes = [fe10_frozen_type, fe10_type]
 convert_fe12_to_fe10 = ref12.crypto_scalarmult_curve13318_ref12_convert_fe12_to_fe10
 convert_fe12_to_fe10.argtypes = [fe10_type, fe12_type]
+ge_frombytes = ref12.crypto_scalarmult_curve13318_ref12_ge_frombytes
+ge_frombytes.argtypes = [ge_type, ctypes.c_ubyte * 64]
+# ge_tobytes = ref12.crypto_scalarmult_curve13318_ref12_ge_tobytes
+# ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ctypes.c_uint64 * 30]
+# ge_add = ref12.crypto_scalarmult_curve13318_ref12_ge_add
+# ge_add.argtypes = [ctypes.c_uint64 * 30] * 3
+
 
 # Custom testing strategies
 
@@ -214,6 +223,114 @@ class TestConvert(unittest.TestCase):
         for limb in z10_c:
             assert(0 <= limb <= 2**26)
 
+class TestGE(unittest.TestCase):
+    def encode_point(x, y, z):
+        """Encode a point in its C representation"""
+        shift = 0
+        x_limbs, y_limbs, z_limbs = [0]*10, [0]*10, [0]*10
+        for i in range(10):
+            mask_width = 26 if i % 2 == 0 else 25
+            x_limbs[i] = (2**mask_width - 1) & (x.lift() >> shift)
+            y_limbs[i] = (2**mask_width - 1) & (y.lift() >> shift)
+            z_limbs[i] = (2**mask_width - 1) & (z.lift() >> shift)
+            shift += mask_width
+
+        p = (ctypes.c_uint64 * 30)(0)
+        for i, limb in enumerate(x_limbs + y_limbs + z_limbs):
+            p[i] = limb
+        return p
+
+    @staticmethod
+    def decode_point(point):
+        x = fe12_val(point[0])
+        y = fe12_val(point[1])
+        z = fe12_val(point[2])
+        return (x, y, z)
+
+    @staticmethod
+    def decode_bytes(c_bytes):
+        x, y = F(0), F(0)
+        for i, b in enumerate(c_bytes[0:32]):
+            x += b * 2**(8*i)
+        for i, b in enumerate(c_bytes[32:64]):
+            y += b * 2**(8*i)
+        return x, y
+
+    @staticmethod
+    def point_to_bytes(x, y):
+        """Encode the numbers as byte input"""
+        # Encode the numbers as byte input
+        c_bytes = (ctypes.c_ubyte * 64)(0)
+        for i in range(32):
+            c_bytes[i] = (x >> (8*i)) & 0xFF
+        for i in range(32):
+            c_bytes[32+i] = (y >> (8*i)) & 0xFF
+        return c_bytes
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
+    @example(0, 0, 1) # point at infinity
+    @example(0, P, 1)
+    @example(0, 2*P, 1)
+    def test_frombytes(self, x, y_suggest, sign):
+        x = F(x)
+        try:
+            x, y = (sign * E(x, y_suggest)).xy()
+            y_in = y
+            expected = 0
+        except TypeError:
+            # `sqrt` failed
+            if F(x) == 0 and F(y_suggest) == 0:
+                # Point at infinity
+                y_in, y = F(0), F(1)
+                z = F(0)
+                expected = 0
+            else:
+                # Invalid input
+                y = F(y_suggest)
+                y_in = y
+                z = F(1)
+                expected = -1
+
+        c_bytes = self.point_to_bytes(x.lift(), y_in.lift())
+        c_point = ge_type(fe12_type(0))
+        ret = ge_frombytes(c_point, c_bytes)
+        actual_x, actual_y, actual_z = self.decode_point(c_point)
+        self.assertEqual(ret, expected)
+        if ret != 0: return
+        self.assertEqual(actual_x, x)
+        self.assertEqual(actual_y, y)
+        self.assertEqual(actual_z, z)
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @example(0, 0, 1, 0, 0, 1)
+    def test_add_ref(self, x1, z1, sign1, x2, z2, sign2):
+        (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
+        (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
+        note("testing: {} + {}".format(point1, point2))
+        note("locals(): {}".format(locals()))
+        x1, y1, z1 = F(x1), F(y1), F(z1)
+        x2, y2, z2 = F(x2), F(y2), F(z2)
+        b = 13318
+        t0 = x1 * x2;        t1 = y1 * y2;        t2 = z1 * z2
+        t3 = x1 + y1;        t4 = x2 + y2;        t3 = t3 * t4
+        t4 = t0 + t1;        t3 = t3 - t4;        t4 = y1 + z1
+        x3 = y2 + z2;        t4 = t4 * x3;        x3 = t1 + t2
+        t4 = t4 - x3;        x3 = x1 + z1;        y3 = x2 + z2
+        x3 = x3 * y3;        y3 = t0 + t2;        y3 = x3 - y3
+        z3 =  b * t2;        x3 = y3 - z3;        z3 = x3 + x3
+        x3 = x3 + z3;        z3 = t1 - x3;        x3 = t1 + x3
+        y3 =  b * y3;        t1 = t2 + t2;        t2 = t1 + t2
+        y3 = y3 - t2;        y3 = y3 - t0;        t1 = y3 + y3
+        y3 = t1 + y3;        t1 = t0 + t0;        t0 = t1 + t0
+        t0 = t0 - t2;        t1 = t4 * y3;        t2 = t0 * y3
+        y3 = x3 * z3;        y3 = y3 + t2;        x3 = x3 * t3
+        x3 = x3 - t1;        z3 = z3 * t4;        t1 = t3 * t0
+        z3 = z3 + t1
+        self.assertEqual(E([x3, y3, z3]), point1 + point2)
+
 
 def make_fe12(limbs=[]):
     """Encode the number in its C representation"""
@@ -247,6 +364,20 @@ def fe10_val(h):
         val += limb * 2**exponent
         exponent += 26 if i % 2 == 0 else 25
     return val
+
+def make_ge(x, z, sign):
+    if z != 0:
+        try:
+            point = sign * E.lift_x(F(x))
+        except ValueError:
+            assume(False)
+        x, y = point.xy()
+        z = F(z)
+        x, y = z * x, z * y
+    else:
+        point = E(0)
+        x, y, z = F(0), F(1), F(z)
+    return (x, y, z), point
 
 
 if __name__ == '__main__':
