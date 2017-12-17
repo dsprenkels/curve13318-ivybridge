@@ -34,8 +34,6 @@ fe12_mul = ref12.crypto_scalarmult_curve13318_ref12_fe12_mul
 fe12_mul.argtypes = [fe12_type, fe12_type, fe12_type]
 fe12_square = ref12.crypto_scalarmult_curve13318_ref12_fe12_square
 fe12_square.argtypes = [fe12_type, fe12_type]
-fe12_invert = ref12.crypto_scalarmult_curve13318_ref12_fe12_invert
-fe12_invert.argtypes = [fe12_type, fe12_type]
 fe10_tobytes = ref12.crypto_scalarmult_curve13318_ref12_fe10_tobytes
 fe10_tobytes.argtypes = [ctypes.c_ubyte * 32, fe10_type]
 fe10_mul = ref12.crypto_scalarmult_curve13318_ref12_fe10_mul
@@ -136,15 +134,6 @@ class TestFE12(unittest.TestCase):
         _, h_c = make_fe12()
         expected = f**2
         fe12_square(h_c, f_c)
-        actual = F(fe12_val(h_c))
-        self.assertEqual(actual, expected)
-
-    @given(st_fe12_squeezed_0)
-    def test_invert(self, f_limbs):
-        f, f_c = make_fe12(f_limbs)
-        _, h_c = make_fe12()
-        expected = f**-1 if f != 0 else 0
-        fe12_invert(h_c, f_c)
         actual = F(fe12_val(h_c))
         self.assertEqual(actual, expected)
 

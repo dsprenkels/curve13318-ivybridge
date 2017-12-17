@@ -49,7 +49,6 @@ typedef double fe12_frozen[6];
 #define fe12_squeeze crypto_scalarmult_curve13318_ref12_fe12_squeeze
 #define fe12_mul crypto_scalarmult_curve13318_ref12_fe12_mul
 #define fe12_square crypto_scalarmult_curve13318_ref12_fe12_square
-#define fe12_invert crypto_scalarmult_curve13318_ref12_fe12_invert
 #define fe12_freeze crypto_scalarmult_curve13318_ref12_fe12_freeze
 #define fe12_add_b crypto_scalarmult_curve13318_ref12_fe12_add_b
 #define fe12_mul_b crypto_scalarmult_curve13318_ref12_fe12_mul_b
@@ -109,11 +108,6 @@ extern void fe12_mul(fe12 dest, const fe12 op1, const fe12 op2);
 Square a field element
 */
 extern void fe12_square(fe12 dest, const fe12 element);
-
-/*
-Invert an element modulo 2^255 - 19
-*/
-extern void fe12_invert(fe12 dest, const fe12 element);
 
 /*
 Reduce an element s.t. the result is always in [0, 2^255-19⟩. Input must
