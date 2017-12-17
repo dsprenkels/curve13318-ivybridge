@@ -93,22 +93,6 @@ static inline void fe10_add2p(fe10 z) {
 }
 
 /*
-Add 4*p to the field element `z`. Useful when 2*p is not enough.
-*/
-static inline void fe10_add4p(fe10 z) {
-    z[0] += _4P0;
-    z[1] += _4PRestB25;
-    z[2] += _4PRestB26;
-    z[3] += _4PRestB25;
-    z[4] += _4PRestB26;
-    z[5] += _4PRestB25;
-    z[6] += _4PRestB26;
-    z[7] += _4PRestB25;
-    z[8] += _4PRestB26;
-    z[9] += _4PRestB25;
-}
-
-/*
 Subtract `rhs` from `z`. This function does *not* work if any of the resulting
 limbs underflow! Ensure that this is not occurs by adding additional carry
 rippling and using `fe10_add2p`.
