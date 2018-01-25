@@ -53,8 +53,6 @@ int ge_frombytes(ge p, const uint8_t *s)
     return 0;
 }
 
-#include "ge.h"
-
 void ge_tobytes(uint8_t *s, ge p)
 {
     /*
@@ -163,6 +161,70 @@ void ge_add(ge p3, const ge p1, const ge p2)
              fe12_copy(t5, z3); fe12_mul(z3, t5, t4); // |z3| ≤ 1.01 * 2^21
              fe12_mul(t1, t3, t0); // |t1| ≤ 1.01 * 2^21
              fe12_add(z3, z3, t1); // |z3| ≤ 1.01 * 2^22
+
+    // Squeeze x3 and z3, otherwise we will get into trouble during the next
+    // Addition/doubling
+    fe12_squeeze(x3);
+    fe12_squeeze(z3);
+
+    fe12_copy(p3[0], x3);
+    fe12_copy(p3[1], y3);
+    fe12_copy(p3[2], z3);
+}
+
+void ge_double(ge p3, const ge p)
+{
+    fe12 x, y, z, x3, y3, z3, t0, t1, t2, t3, t5;
+    fe12_copy(x, p[0]);
+    fe12_copy(y, p[1]);
+    fe12_copy(z, p[2]);
+
+    /*
+    The same rules and assumptions from ge_add are in force here. Notably, we
+    know that a multiplication result is bounded by ±1.01 * 2^21 and that it is
+    all right if the product of two fe12_mul operands is not bigger than
+    0.98 * 2^53 * 2^k.
+    */
+    /*   #: Instruction number as mentioned in the paper */
+             // Assume forall x in {x1, z1, x2, z2} : |x| ≤ 1.01 * 2^21
+             //        forall x in {y1, y2} :         |x| ≤ 1.01 * 2^22
+             fe12_square(t0, x);   // |t0| ≤ 1.01 * 2^21
+             fe12_square(t1, y);   // |t1| ≤ 1.01 * 2^21
+             fe12_square(t2, z);   // |t2| ≤ 1.01 * 2^21
+             fe12_mul(t3, x, y);   // |t3| ≤ 1.01 * 2^21
+    /*  5 */ fe12_add(t3, t3, t3); // |t3| ≤ 1.01 * 2^22
+             fe12_mul(z3, x, z);   // |z3| ≤ 1.01 * 2^21
+             fe12_add(z3, z3, z3); // |z3| ≤ 1.01 * 2^22
+             fe12_mul_b(y3, t2);   // |y3| ≤ 1.01 * 2^21
+             fe12_sub(y3, y3, z3); // |y3| ≤ 1.01 * (2^22 + 2^21)
+    /* 10 */ fe12_add(x3, y3, y3); // |x3| ≤ 1.01 * (2^23 + 2^22)
+             fe12_add(y3, x3, y3); // |y3| ≤ 1.01 * (2^24 + 2^21)
+             fe12_sub(x3, t1, y3); // |x3| ≤ 1.01 * (2^24 + 2^22)
+             fe12_add(y3, t1, y3); // |y3| ≤ 1.01 * (2^24 + 2^22)
+    /* __ */ fe12_squeeze(x3);     // extra squeeze |x3| ≤ 1.01 * 2^21
+    /* __ */ fe12_squeeze(y3);     // extra squeeze |y3| ≤ 1.01 * 2^21
+             fe12_copy(t5, y3); fe12_mul(y3, x3, t5); // |y3| ≤ 1.01 * 2^21
+    /* 15 */ fe12_copy(t5, x3); fe12_mul(x3, t5, t3); // |x3| ≤ 1.01 * 2^21
+             fe12_add(t3, t2, t2); // |t3| ≤ 1.01 * (2^22 + 2^21)
+             fe12_add(t2, t2, t3); // |t3| ≤ 1.01 * 2^23
+             fe12_mul_b(z3, z3);   // |z3| ≤ 1.01 * 2^21
+             fe12_sub(z3, z3, t2); // |z3| ≤ 1.01 * (2^23 + 2^21)
+    /* 20 */ fe12_sub(z3, z3, t0); // |z3| ≤ 1.01 * (2^23 + 2^22)
+             fe12_add(t3, z3, z3); // |t3| ≤ 1.01 * (2^24 + 2^23)
+             fe12_add(z3, z3, t3); // |z3| ≤ 1.01 * (2^25 + 2^22)
+             fe12_add(t3, t0, t0); // |t3| ≤ 1.01 * 2^22
+             fe12_add(t0, t3, t0); // |t0| ≤ 1.01 * (2^22 + 2^21)
+    /* 25 */ fe12_sub(t0, t0, t2); // |t0| ≤ 1.01 * (2^23 + 2^22 + 2^21)
+    /* __ */ fe12_squeeze(z3);     // extra squeeze |z3| ≤ 1.01 * 2^21
+             fe12_copy(t5, t0); fe12_mul(t0, t5, z3); // |t0| ≤ 1.01 * 2^21
+             fe12_add(y3, y3, t0); // |y3| ≤ 1.01 * 2^22
+             fe12_mul(t0, y, z);   // |t0| ≤ 1.01 * 2^21
+             fe12_add(t0, t0, t0); // |t0| ≤ 1.01 * 2^22
+    /* 30 */ fe12_copy(t5, z3); fe12_mul(z3, t0, t5); // |z3| ≤ 1.01 * 2^21
+             fe12_sub(x3, x3, z3); // |x3| ≤ 1.01 * 2^22
+             fe12_mul(z3, t0, t1); // |z3| ≤ 1.01 * 2^21
+             fe12_add(z3, z3, z3); // |z3| ≤ 1.01 * 2^22
+             fe12_add(z3, z3, z3); // |z3| ≤ 1.01 * 2^23
 
     // Squeeze x3 and z3, otherwise we will get into trouble during the next
     // Addition/doubling

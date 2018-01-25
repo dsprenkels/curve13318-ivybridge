@@ -82,7 +82,7 @@ static inline void fe12_add(fe12 z, fe12 lhs, fe12 rhs) {
     for (unsigned int i = 0; i < 12; i++) z[i] = lhs[i] + rhs[i];
 }
 
-/*CURVE13318_B
+/*
 Subtract `rhs` from `lhs` and store the result in `z`
 */
 static inline void fe12_sub(fe12 z, fe12 lhs, fe12 rhs) {

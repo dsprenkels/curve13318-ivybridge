@@ -54,6 +54,8 @@ ge_tobytes = ref12.crypto_scalarmult_curve13318_ref12_ge_tobytes
 ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ge_type]
 ge_add = ref12.crypto_scalarmult_curve13318_ref12_ge_add
 ge_add.argtypes = [ge_type] * 3
+ge_double = ref12.crypto_scalarmult_curve13318_ref12_ge_double
+ge_double.argtypes = [ge_type] * 2
 
 
 # Custom testing strategies
@@ -314,6 +316,8 @@ class TestGE(unittest.TestCase):
            st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
            st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
     @example(0, 0, 1, 0, 0, 1)
+    @example(0, 1, 1, 0, 0, 1)
+    @example(0, 1, -1, 0, 0, 1)
     def test_add(self, x1, z1, sign1, x2, z2, sign2):
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
         (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
@@ -332,9 +336,31 @@ class TestGE(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
+    @example(0, 0, 1)
+    @example(0, 1, 1)
+    @example(0, 1, -1)
+    def test_double(self, x, z, sign1):
+        (x, y, z), point = make_ge(x, z, sign1)
+        c_point = self.encode_point(x, y, z)
+        c_point3 = ge_type(fe12_type(0))
+        ge_double(c_point3, c_point)
+        x3, y3, z3 = self.decode_point(c_point3)
+        expected = 2*point
+        note("Expected: {}".format(expected))
+        note("Actual: ({} : {} : {})".format(x3, y3, z3))
+        if expected == E(0):
+            self.assertEqual(F(z3), 0)
+            return
+        actual = E([F(x3), F(y3), F(z3)])
+        self.assertEqual(actual, expected)
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
            st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
            st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
     @example(0, 0, 1, 0, 0, 1)
+    @example(0, 1, 1, 0, 0, 1)
+    @example(0, 1, -1, 0, 0, 1)
     def test_add_ref(self, x1, z1, sign1, x2, z2, sign2):
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
         (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
@@ -363,6 +389,8 @@ class TestGE(unittest.TestCase):
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
            st.sampled_from([1, -1]))
     @example(0, 0, 1)
+    @example(0, 1, 1)
+    @example(0, 1, -1)
     def test_double_ref(self, x, z, sign):
         (x, y, z), point = make_ge(x, z, sign)
         note("testing: 2*{}".format(point))
