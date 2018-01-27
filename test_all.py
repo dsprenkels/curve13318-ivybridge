@@ -4,7 +4,6 @@
 import ctypes
 import io
 import os
-import sys
 import unittest
 
 from sage.all import *
@@ -13,7 +12,15 @@ P = 2**255 - 19
 F = FiniteField(P)
 E = EllipticCurve(F, [-3, 13318])
 
-from hypothesis import assume, example, given, note, strategies as st
+from hypothesis import assume, example, given, note, seed, settings, strategies as st, unlimited
+
+settings.register_profile("ci", settings(deadline=None,
+                                         max_examples=10000,
+                                         max_iterations=1000000,
+                                         timeout=unlimited))
+
+if os.environ.get('CI', None) == '1':
+    settings.load_profile("ci")
 
 # Load shared libcurve13318 library
 ref12 = ctypes.CDLL(os.path.join(os.path.abspath('.'), 'libref12.so'))
@@ -88,9 +95,21 @@ st_fe12_squeezed_1 = st.tuples(
     st.integers(-1.01 * 2**22, 1.01 * 2**22),
     st.integers(-1.01 * 2**22, 1.01 * 2**22),
     st.integers(-1.01 * 2**22, 1.01 * 2**22))
-st_fe10_carried_0 = st.lists(st.integers(0, 2**26), min_size=10, max_size=10)
-st_fe10_carried_1 = st.lists(st.integers(0, 2**27), min_size=10, max_size=10)
-st_fe10_carried_2 = st.lists(st.integers(0, 2**28), min_size=10, max_size=10)
+st_fe10_carried_0 = st.tuples(st.integers(0, 2**26), st.integers(0, 2**25),
+                              st.integers(0, 2**26), st.integers(0, 2**25),
+                              st.integers(0, 2**26), st.integers(0, 2**25),
+                              st.integers(0, 2**26), st.integers(0, 2**25),
+                              st.integers(0, 2**26), st.integers(0, 2**25))
+st_fe10_carried_1 = st.tuples(st.integers(0, 2**27), st.integers(0, 2**26),
+                              st.integers(0, 2**27), st.integers(0, 2**26),
+                              st.integers(0, 2**27), st.integers(0, 2**26),
+                              st.integers(0, 2**27), st.integers(0, 2**26),
+                              st.integers(0, 2**27), st.integers(0, 2**26))
+st_fe10_carried_2 = st.tuples(st.integers(0, 2**28), st.integers(0, 2**27),
+                              st.integers(0, 2**28), st.integers(0, 2**27),
+                              st.integers(0, 2**28), st.integers(0, 2**27),
+                              st.integers(0, 2**28), st.integers(0, 2**27),
+                              st.integers(0, 2**28), st.integers(0, 2**27))
 st_fe10_uncarried = st.lists(st.integers(0, 2**63), min_size=10, max_size=10)
 
 
@@ -499,7 +518,7 @@ def fe10_val(h):
     return val
 
 def make_ge(x, z, sign):
-    if z != 0:
+    if F(z) != 0:
         try:
             point = sign * E.lift_x(F(x))
         except ValueError:
