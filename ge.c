@@ -6,33 +6,45 @@ static bool ge_affine_point_on_curve(ge p)
 {
     // Use the general curve equation to check if this point is on the curve
     // y^2 = x^3 - 3*x + 13318
+
+    // FIXME(dsprenkels) Something seems to go wrong with the squaring of y
+    // in this function. Don't know what exactly, maybe look at `fe10_square`?ck
     fe10 p0, p1, lhs, rhs, t0;
     fe10_frozen result;
     convert_fe12_to_fe10(p0, p[0]);
     convert_fe12_to_fe10(p1, p[1]);
-    fe10_square(lhs, p1);    // y^2
-    fe10_square(t0, p0);     // x^2
-    fe10_mul(rhs, t0, p0);   // x^3
-    fe10_zero(t0);           // 0
-    fe10_add2p(t0);          // 0
-    fe10_sub(t0, t0, p0);    // -x
-    fe10_add(rhs, rhs, t0);  // x^3 - x
-    fe10_add(rhs, rhs, t0);  // x^3 - 2*x
-    fe10_add(rhs, rhs, t0);  // x^3 - 3*x
-    fe10_add_b(rhs);         // x^3 - 3*x + 13318
+    fe10_square(lhs, p1);     // y^2
+    fe10_square(t0, p0);      // x^2
+    fe10_mul(rhs, t0, p0);    // x^3
+    fe10_zero(t0);            // 0
+    fe10_add2p(t0);           // 0
+    fe10_sub(t0, t0, p0);     // -x
+    fe10_add(rhs, rhs, t0);   // x^3 - x
+    fe10_add(rhs, rhs, t0);   // x^3 - 2*x
+    fe10_add(rhs, rhs, t0);   // x^3 - 3*x
+    fe10_add_b(rhs);          // x^3 - 3*x + 13318
     fe10_carry(rhs);
-    fe10_add2p(lhs);         // Still y^2
-    fe10_sub(lhs, lhs, rhs); // (==0) or (!=0) mod p
+    fe10_add2p(lhs);          // Still y^2
+    fe10_sub(lhs, lhs, rhs);  // (==0) or (!=0) mod p
     fe10_carry(lhs);
-    fe10_reduce(result, lhs);        // 0 or !0
+    fe10_reduce(result, lhs); // 0 or !0
 
     uint64_t nonzero = 0;
-    for (unsigned int i = 0; i < 5; i++) nonzero |= lhs[i];
+    for (unsigned int i = 0; i < 5; i++) nonzero |= result[i];
     return nonzero == 0;
 }
 
 int ge_frombytes(ge p, const uint8_t *s)
 {
+    // XXX(dsprenkels) I should think about input coordinates larger than p.
+    // In this case, we should definitely ditch the last (256'th) bit if it
+    // is set one of the coordinates. However, I am not really sure if we lose
+    // any guarantees if an input coordinates is larger or equal to p, but
+    // smaller than 2^255, i.e. `p <= x <= 2^255`.
+    // We do not risk going out of bounds here, and the computation will go
+    // along as if just reduced by p, which cannot force into any invalid
+    // points (as long as we have checked with `ge_affine_point_on_curve`.
+
     fe12_frombytes(p[0], &s[0]);
     fe12_frombytes(p[1], &s[32]);
 
@@ -40,16 +52,15 @@ int ge_frombytes(ge p, const uint8_t *s)
     uint64_t infinity = 1;
     for (unsigned int i = 0; i < 12; i++) infinity &= p[0][i] == 0;
     for (unsigned int i = 0; i < 12; i++) infinity &= p[1][i] == 0;
-    uint64_t not_infinity = !infinity;
 
     // Set y to 1 if we are at the point at infinity
-    p[1][0] = 1 * infinity;
+    p[1][0] += 1 * infinity;
     // Initialize z to 1 (or 0 if infinity)
-    p[2][0] = 1 * not_infinity;
+    p[2][0]  = 1 * !infinity;
     for (unsigned int i = 1; i < 12; i++) p[2][i] = 0;
 
     // Check if this point is valid
-    if (not_infinity & !ge_affine_point_on_curve(p)) return -1;
+    if (!infinity & !ge_affine_point_on_curve(p)) return -1;
     return 0;
 }
 

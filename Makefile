@@ -1,10 +1,11 @@
 CC = clang
 CFLAGS += -m64 -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
-          -Wstrict-prototypes -Wmissing-prototypes -fPIC -g -O3
+          -Wstrict-prototypes -fPIC -g -O3
 SRCS = fe10.c \
        fe12.c \
        fe_convert.c \
-       ge.c
+       ge.c \
+       scalarmult.c
 OBJS := ${SRCS:.c=.o}
 
 all: libref12.so
