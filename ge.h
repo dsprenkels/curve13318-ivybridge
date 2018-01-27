@@ -20,6 +20,15 @@ typedef fe12 ge[3];
 #define ge_add crypto_scalarmult_curve13318_ref12_ge_add
 
 /*
+Write the neutral element (0 : 1 : 0) to point
+*/
+static inline void ge_zero(ge point) {
+    fe12_zero(point[0]);
+    fe12_one(point[1]);
+    fe12_zero(point[2]);
+}
+
+/*
 Copy a ge value to another ge type
 */
 static inline void ge_copy(ge dest, const ge src) {

@@ -56,6 +56,8 @@ ge_add = ref12.crypto_scalarmult_curve13318_ref12_ge_add
 ge_add.argtypes = [ge_type] * 3
 ge_double = ref12.crypto_scalarmult_curve13318_ref12_ge_double
 ge_double.argtypes = [ge_type] * 2
+scalarmult = ref12.crypto_scalarmult_curve13318_scalarmult
+scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte * 64];
 
 
 # Custom testing strategies
@@ -410,6 +412,57 @@ class TestGE(unittest.TestCase):
         x3 = x3 - z3;       z3 = t0 * t1;       z3 = z3 + z3
         z3 = z3 + z3;
         self.assertEqual(E([x3, y3, z3]), 2*point)
+
+class TestScalarmult(unittest.TestCase):
+    @staticmethod
+    def encode_k(k):
+        k_bytes = (ctypes.c_ubyte * 32)(0)
+        for i in range(32):
+            k_bytes[i] = (k >> (8*i)) & 0xFF
+        return k_bytes
+
+    @given(st.integers(0, 2**255 - 1), st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @example(0, 1, 0, 1)
+    def test_scalarmult(self, k, x, z, sign):
+        _, point = make_ge(x, z, sign)
+        note('Initial point: ' + str(point))
+        if point.is_zero():
+            (x, y) = F(0), F(0)
+        else:
+            (x, y) = point.xy()
+        c_bytes_in = TestGE.point_to_bytes(x.lift(), y.lift())
+        k_bytes = self.encode_k(k)
+        c_bytes_out = (ctypes.c_ubyte * 64)(0)
+
+        ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
+        actual = [int(x) for x in c_bytes_out]
+
+        expected_point = k * point
+        if expected_point.is_zero():
+            expected_x, expected_y = F(0), F(0)
+        else:
+            expected_x, expected_y = expected_point.xy()
+        expected = TestGE.point_to_bytes(expected_x.lift(), expected_y.lift())
+        expected = [int(x) for x in expected]
+        note('actual:   ' + str(actual))
+        note('expected: ' + str(expected))
+        self.assertEqual(ret, 0)
+        self.assertEqual(actual, expected)
+
+    @given(st.integers(0, 2**255 - 1), st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1))
+    @example(0, 0, 0)
+    def test_scalarmult_invalid_point(self, k, x, y):
+        if (x, y) in E or (x, y) == (0, 0):
+            expected = 0
+        else:
+            expected = -1
+        c_bytes_in = TestGE.point_to_bytes(x, y)
+        k_bytes = self.encode_k(k)
+        c_bytes_out = (ctypes.c_ubyte * 64)(0)
+        ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
+        self.assertEqual(ret, expected)
 
 
 def make_fe12(limbs=[]):
