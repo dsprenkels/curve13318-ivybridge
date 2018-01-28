@@ -1,6 +1,6 @@
-CC = clang
-CFLAGS += -m64 -std=c99 -pedantic -Wall -Wshadow -Wpointer-arith -Wcast-qual \
-          -Wstrict-prototypes -fPIC -g -O3
+CC = gcc
+CFLAGS += -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
+          -Wstrict-prototypes -fPIC -g -O3 -mtune=native
 SRCS = fe10.c \
        fe12.c \
        fe_convert.c \

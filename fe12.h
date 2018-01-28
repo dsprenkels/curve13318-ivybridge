@@ -46,6 +46,7 @@ typedef double fe12_frozen[6];
 #define fe12_copy crypto_scalarmult_curve13318_ref12_fe12_copy
 #define fe12_add crypto_scalarmult_curve13318_ref12_fe12_add
 #define fe12_sub crypto_scalarmult_curve13318_ref12_fe12_sub
+#define fe12_mul_small crypto_scalarmult_curve13318_ref12_fe12_mul_small
 #define fe12_squeeze crypto_scalarmult_curve13318_ref12_fe12_squeeze
 #define fe12_mul crypto_scalarmult_curve13318_ref12_fe12_mul
 #define fe12_square crypto_scalarmult_curve13318_ref12_fe12_square
@@ -90,6 +91,13 @@ static inline void fe12_sub(fe12 z, fe12 lhs, fe12 rhs) {
 }
 
 /*
+Multiply z by a small constant
+*/
+static inline void fe12_mul_small(fe12 z, const double n) {
+    for (unsigned int i = 0; i < 12; i++) z[i] = n * z[i];
+}
+
+/*
 Parse 32 bytes into a `fe12` type
 */
 extern void fe12_frombytes(fe12 element, const uint8_t *bytes);
@@ -126,7 +134,8 @@ static inline void fe12_add_b(fe12 z) {
 Multiply `f` by 13318 and store the result in `h`
 */
 static inline void fe12_mul_b(fe12 h, fe12 f) {
-    for (unsigned int i = 0; i < 12; i++) h[i] = 13318 * f[i];
+    fe12_copy(h, f);
+    fe12_mul_small(h, 13318);
     fe12_squeeze(h);
 }
 
