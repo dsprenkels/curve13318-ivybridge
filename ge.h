@@ -13,11 +13,13 @@ point on E is represented by its projective coordinates, i.e. (X : Y : Z).
 
 typedef fe12 ge[3];
 
+#define ge_zero crypto_scalarmult_curve13318_ref12_ge_zero
+#define ge_copy crypto_scalarmult_curve13318_ref12_ge_copy
+#define ge_cneg crypto_scalarmult_curve13318_ref12_ge_cneg
 #define ge_frombytes crypto_scalarmult_curve13318_ref12_ge_frombytes
 #define ge_tobytes crypto_scalarmult_curve13318_ref12_ge_tobytes
 #define ge_add crypto_scalarmult_curve13318_ref12_ge_add
 #define ge_double crypto_scalarmult_curve13318_ref12_ge_double
-#define ge_add crypto_scalarmult_curve13318_ref12_ge_add
 
 /*
 Write the neutral element (0 : 1 : 0) to point
@@ -33,6 +35,14 @@ Copy a ge value to another ge type
 */
 static inline void ge_copy(ge dest, const ge src) {
     for (unsigned int i = 0; i < 3; i++) fe12_copy(dest[i], src[i]);
+}
+
+/*
+Conditionally negate a ge value. `c` must be exactly 0 or 1
+*/
+static inline void ge_cneg(ge point, uint8_t c) {
+    const double n = 1 - 2*c;
+    fe12_mul_small(point[1], n);
 }
 
 /*
