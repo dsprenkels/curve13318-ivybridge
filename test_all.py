@@ -37,8 +37,10 @@ fe12_frombytes = ref12.crypto_scalarmult_curve13318_ref12_fe12_frombytes
 fe12_frombytes.argtypes = [fe12_type, ctypes.c_ubyte * 32]
 fe12_squeeze = ref12.crypto_scalarmult_curve13318_ref12_fe12_squeeze
 fe12_squeeze.argtypes = [fe12_type]
-fe12_mul = ref12.crypto_scalarmult_curve13318_ref12_fe12_mul
-fe12_mul.argtypes = [fe12_type, fe12_type, fe12_type]
+fe12_mul_schoolbook = ref12.crypto_scalarmult_curve13318_ref12_fe12_mul_schoolbook
+fe12_mul_schoolbook.argtypes = [fe12_type, fe12_type, fe12_type]
+fe12_mul_karatsuba = ref12.crypto_scalarmult_curve13318_ref12_fe12_mul_karatsuba
+fe12_mul_karatsuba.argtypes = [fe12_type, fe12_type, fe12_type]
 fe12_square = ref12.crypto_scalarmult_curve13318_ref12_fe12_square
 fe12_square.argtypes = [fe12_type, fe12_type]
 fe10_tobytes = ref12.crypto_scalarmult_curve13318_ref12_fe10_tobytes
@@ -75,6 +77,7 @@ st_fe12_squeezed_0 = st.tuples(
     st.integers(-1.01 * 2**22, 1.01 * 2**22),
     st.integers(-1.01 * 2**21, 1.01 * 2**21),
     st.integers(-1.01 * 2**21, 1.01 * 2**21),
+    st.integers(-1.01 * 2**21, 1.01 * 2**21),
     st.integers(-1.01 * 2**22, 1.01 * 2**22),
     st.integers(-1.01 * 2**21, 1.01 * 2**21),
     st.integers(-1.01 * 2**21, 1.01 * 2**21),
@@ -85,6 +88,7 @@ st_fe12_squeezed_0 = st.tuples(
     st.integers(-1.01 * 2**21, 1.01 * 2**21))
 st_fe12_squeezed_1 = st.tuples(
     st.integers(-1.01 * 2**23, 1.01 * 2**23),
+    st.integers(-1.01 * 2**22, 1.01 * 2**22),
     st.integers(-1.01 * 2**22, 1.01 * 2**22),
     st.integers(-1.01 * 2**22, 1.01 * 2**22),
     st.integers(-1.01 * 2**23, 1.01 * 2**23),
@@ -139,17 +143,29 @@ class TestFE12(unittest.TestCase):
         actual = sum(F(int(x)) for x in z_c)
         self.assertEqual(actual, expected)
 
+    @staticmethod
+    def do_test_mul(fn):
+        def do_test_mul_inner(self, f_limbs, g_limbs, swap):
+            if swap:
+                f_limbs, g_limbs = g_limbs, f_limbs
+            f, f_c = make_fe12(f_limbs)
+            g, g_c = make_fe12(g_limbs)
+            _, h_c = make_fe12()
+            expected = f * g
+            fn(h_c, f_c, g_c)
+            note("Multiplying {} and {}".format(f, g))
+            note("Expected {}".format(expected))
+            actual = F(fe12_val(h_c))
+            self.assertEqual(actual, expected)
+        return do_test_mul_inner
+
     @given(st_fe12_squeezed_0, st_fe12_squeezed_1, st.booleans())
-    def test_mul(self, f_limbs, g_limbs, swap):
-        if swap:
-            f_limbs, g_limbs = g_limbs, f_limbs
-        f, f_c = make_fe12(f_limbs)
-        g, g_c = make_fe12(g_limbs)
-        _, h_c = make_fe12()
-        expected = f * g
-        fe12_mul(h_c, f_c, g_c)
-        actual = F(fe12_val(h_c))
-        self.assertEqual(actual, expected)
+    def test_mul_schoolbook(self, f_limbs, g_limbs, swap):
+        self.do_test_mul(fe12_mul_schoolbook)(self, f_limbs, g_limbs, swap)
+
+    @given(st_fe12_squeezed_0, st_fe12_squeezed_1, st.booleans())
+    def test_mul_karatsuba(self, f_limbs, g_limbs, swap):
+        self.do_test_mul(fe12_mul_karatsuba)(self, f_limbs, g_limbs, swap)
 
     @given(st_fe12_squeezed_0)
     def test_square(self, f_limbs):
