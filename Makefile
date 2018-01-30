@@ -1,5 +1,5 @@
 CFLAGS += -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
-          -Wstrict-prototypes -fPIC -g -O3 -masm=intel -march=sandybridge
+          -Wstrict-prototypes -fPIC -g -O3 -masm=intel -march=ivybridge
 SRCS = fe10.c \
        fe12.c \
        fe_convert.c \

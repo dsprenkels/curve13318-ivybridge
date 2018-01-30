@@ -286,193 +286,360 @@ void fe12_mul(fe12 C, const fe12 A, const fe12 B)
     fe12_squeeze(C);
 }
 
-void fe12_mul_schoolbook(fe12 h, const fe12 f, const fe12 g)
+void fe12_mul_schoolbook(fe12 C, const fe12 A, const fe12 B)
 {
-    // Precompute reduced g values
-    const double  g1_19 = 0x13p-255 * g[ 1];
-    const double  g2_19 = 0x13p-255 * g[ 2];
-    const double  g3_19 = 0x13p-255 * g[ 3];
-    const double  g4_19 = 0x13p-255 * g[ 4];
-    const double  g5_19 = 0x13p-255 * g[ 5];
-    const double  g6_19 = 0x13p-255 * g[ 6];
-    const double  g7_19 = 0x13p-255 * g[ 7];
-    const double  g8_19 = 0x13p-255 * g[ 8];
-    const double  g9_19 = 0x13p-255 * g[ 9];
-    const double g10_19 = 0x13p-255 * g[10];
-    const double g11_19 = 0x13p-255 * g[11];
+    // Precompute reduced B values
+    const double  B1_19 = 0x13p-255 * B[ 1];
+    const double  B2_19 = 0x13p-255 * B[ 2];
+    const double  B3_19 = 0x13p-255 * B[ 3];
+    const double  B4_19 = 0x13p-255 * B[ 4];
+    const double  B5_19 = 0x13p-255 * B[ 5];
+    const double  B6_19 = 0x13p-255 * B[ 6];
+    const double  B7_19 = 0x13p-255 * B[ 7];
+    const double  B8_19 = 0x13p-255 * B[ 8];
+    const double  B9_19 = 0x13p-255 * B[ 9];
+    const double B10_19 = 0x13p-255 * B[10];
+    const double B11_19 = 0x13p-255 * B[11];
 
     // Round  1/12
-    h[ 0] = f[0] * g[ 0];
-    h[ 1] = f[0] * g[ 1];
-    h[ 2] = f[0] * g[ 2];
-    h[ 3] = f[0] * g[ 3];
-    h[ 4] = f[0] * g[ 4];
-    h[ 5] = f[0] * g[ 5];
-    h[ 6] = f[0] * g[ 6];
-    h[ 7] = f[0] * g[ 7];
-    h[ 8] = f[0] * g[ 8];
-    h[ 9] = f[0] * g[ 9];
-    h[10] = f[0] * g[10];
-    h[11] = f[0] * g[11];
+    C[ 0] = A[0] * B[ 0];
+    C[ 1] = A[0] * B[ 1];
+    C[ 2] = A[0] * B[ 2];
+    C[ 3] = A[0] * B[ 3];
+    C[ 4] = A[0] * B[ 4];
+    C[ 5] = A[0] * B[ 5];
+    C[ 6] = A[0] * B[ 6];
+    C[ 7] = A[0] * B[ 7];
+    C[ 8] = A[0] * B[ 8];
+    C[ 9] = A[0] * B[ 9];
+    C[10] = A[0] * B[10];
+    C[11] = A[0] * B[11];
 
     // Round  2/12
-    h[ 0] += f[ 1] * g11_19;
-    h[ 1] += f[ 1] * g[ 0];
-    h[ 2] += f[ 1] * g[ 1];
-    h[ 3] += f[ 1] * g[ 2];
-    h[ 4] += f[ 1] * g[ 3];
-    h[ 5] += f[ 1] * g[ 4];
-    h[ 6] += f[ 1] * g[ 5];
-    h[ 7] += f[ 1] * g[ 6];
-    h[ 8] += f[ 1] * g[ 7];
-    h[ 9] += f[ 1] * g[ 8];
-    h[10] += f[ 1] * g[ 9];
-    h[11] += f[ 1] * g[10];
+    C[ 0] += A[ 1] * B11_19;
+    C[ 1] += A[ 1] * B[ 0];
+    C[ 2] += A[ 1] * B[ 1];
+    C[ 3] += A[ 1] * B[ 2];
+    C[ 4] += A[ 1] * B[ 3];
+    C[ 5] += A[ 1] * B[ 4];
+    C[ 6] += A[ 1] * B[ 5];
+    C[ 7] += A[ 1] * B[ 6];
+    C[ 8] += A[ 1] * B[ 7];
+    C[ 9] += A[ 1] * B[ 8];
+    C[10] += A[ 1] * B[ 9];
+    C[11] += A[ 1] * B[10];
 
     // Round  3/12
-    h[ 0] += f[ 2] * g10_19;
-    h[ 1] += f[ 2] * g11_19;
-    h[ 2] += f[ 2] * g[ 0];
-    h[ 3] += f[ 2] * g[ 1];
-    h[ 4] += f[ 2] * g[ 2];
-    h[ 5] += f[ 2] * g[ 3];
-    h[ 6] += f[ 2] * g[ 4];
-    h[ 7] += f[ 2] * g[ 5];
-    h[ 8] += f[ 2] * g[ 6];
-    h[ 9] += f[ 2] * g[ 7];
-    h[10] += f[ 2] * g[ 8];
-    h[11] += f[ 2] * g[ 9];
+    C[ 0] += A[ 2] * B10_19;
+    C[ 1] += A[ 2] * B11_19;
+    C[ 2] += A[ 2] * B[ 0];
+    C[ 3] += A[ 2] * B[ 1];
+    C[ 4] += A[ 2] * B[ 2];
+    C[ 5] += A[ 2] * B[ 3];
+    C[ 6] += A[ 2] * B[ 4];
+    C[ 7] += A[ 2] * B[ 5];
+    C[ 8] += A[ 2] * B[ 6];
+    C[ 9] += A[ 2] * B[ 7];
+    C[10] += A[ 2] * B[ 8];
+    C[11] += A[ 2] * B[ 9];
 
     // Round  4/12
-    h[ 0] += f[ 3] * g9_19;
-    h[ 1] += f[ 3] * g10_19;
-    h[ 2] += f[ 3] * g11_19;
-    h[ 3] += f[ 3] * g[ 0];
-    h[ 4] += f[ 3] * g[ 1];
-    h[ 5] += f[ 3] * g[ 2];
-    h[ 6] += f[ 3] * g[ 3];
-    h[ 7] += f[ 3] * g[ 4];
-    h[ 8] += f[ 3] * g[ 5];
-    h[ 9] += f[ 3] * g[ 6];
-    h[10] += f[ 3] * g[ 7];
-    h[11] += f[ 3] * g[ 8];
+    C[ 0] += A[ 3] * B9_19;
+    C[ 1] += A[ 3] * B10_19;
+    C[ 2] += A[ 3] * B11_19;
+    C[ 3] += A[ 3] * B[ 0];
+    C[ 4] += A[ 3] * B[ 1];
+    C[ 5] += A[ 3] * B[ 2];
+    C[ 6] += A[ 3] * B[ 3];
+    C[ 7] += A[ 3] * B[ 4];
+    C[ 8] += A[ 3] * B[ 5];
+    C[ 9] += A[ 3] * B[ 6];
+    C[10] += A[ 3] * B[ 7];
+    C[11] += A[ 3] * B[ 8];
 
     // Round  5/12
-    h[ 0] += f[ 4] * g8_19;
-    h[ 1] += f[ 4] * g9_19;
-    h[ 2] += f[ 4] * g10_19;
-    h[ 3] += f[ 4] * g11_19;
-    h[ 4] += f[ 4] * g[ 0];
-    h[ 5] += f[ 4] * g[ 1];
-    h[ 6] += f[ 4] * g[ 2];
-    h[ 7] += f[ 4] * g[ 3];
-    h[ 8] += f[ 4] * g[ 4];
-    h[ 9] += f[ 4] * g[ 5];
-    h[10] += f[ 4] * g[ 6];
-    h[11] += f[ 4] * g[ 7];
+    C[ 0] += A[ 4] * B8_19;
+    C[ 1] += A[ 4] * B9_19;
+    C[ 2] += A[ 4] * B10_19;
+    C[ 3] += A[ 4] * B11_19;
+    C[ 4] += A[ 4] * B[ 0];
+    C[ 5] += A[ 4] * B[ 1];
+    C[ 6] += A[ 4] * B[ 2];
+    C[ 7] += A[ 4] * B[ 3];
+    C[ 8] += A[ 4] * B[ 4];
+    C[ 9] += A[ 4] * B[ 5];
+    C[10] += A[ 4] * B[ 6];
+    C[11] += A[ 4] * B[ 7];
 
     // Round  6/12
-    h[ 0] += f[ 5] * g7_19;
-    h[ 1] += f[ 5] * g8_19;
-    h[ 2] += f[ 5] * g9_19;
-    h[ 3] += f[ 5] * g10_19;
-    h[ 4] += f[ 5] * g11_19;
-    h[ 5] += f[ 5] * g[ 0];
-    h[ 6] += f[ 5] * g[ 1];
-    h[ 7] += f[ 5] * g[ 2];
-    h[ 8] += f[ 5] * g[ 3];
-    h[ 9] += f[ 5] * g[ 4];
-    h[10] += f[ 5] * g[ 5];
-    h[11] += f[ 5] * g[ 6];
+    C[ 0] += A[ 5] * B7_19;
+    C[ 1] += A[ 5] * B8_19;
+    C[ 2] += A[ 5] * B9_19;
+    C[ 3] += A[ 5] * B10_19;
+    C[ 4] += A[ 5] * B11_19;
+    C[ 5] += A[ 5] * B[ 0];
+    C[ 6] += A[ 5] * B[ 1];
+    C[ 7] += A[ 5] * B[ 2];
+    C[ 8] += A[ 5] * B[ 3];
+    C[ 9] += A[ 5] * B[ 4];
+    C[10] += A[ 5] * B[ 5];
+    C[11] += A[ 5] * B[ 6];
 
     // Round  7/12
-    h[ 0] += f[ 6] * g6_19;
-    h[ 1] += f[ 6] * g7_19;
-    h[ 2] += f[ 6] * g8_19;
-    h[ 3] += f[ 6] * g9_19;
-    h[ 4] += f[ 6] * g10_19;
-    h[ 5] += f[ 6] * g11_19;
-    h[ 6] += f[ 6] * g[ 0];
-    h[ 7] += f[ 6] * g[ 1];
-    h[ 8] += f[ 6] * g[ 2];
-    h[ 9] += f[ 6] * g[ 3];
-    h[10] += f[ 6] * g[ 4];
-    h[11] += f[ 6] * g[ 5];
+    C[ 0] += A[ 6] * B6_19;
+    C[ 1] += A[ 6] * B7_19;
+    C[ 2] += A[ 6] * B8_19;
+    C[ 3] += A[ 6] * B9_19;
+    C[ 4] += A[ 6] * B10_19;
+    C[ 5] += A[ 6] * B11_19;
+    C[ 6] += A[ 6] * B[ 0];
+    C[ 7] += A[ 6] * B[ 1];
+    C[ 8] += A[ 6] * B[ 2];
+    C[ 9] += A[ 6] * B[ 3];
+    C[10] += A[ 6] * B[ 4];
+    C[11] += A[ 6] * B[ 5];
 
     // Round  8/12
-    h[ 0] += f[ 7] * g5_19;
-    h[ 1] += f[ 7] * g6_19;
-    h[ 2] += f[ 7] * g7_19;
-    h[ 3] += f[ 7] * g8_19;
-    h[ 4] += f[ 7] * g9_19;
-    h[ 5] += f[ 7] * g10_19;
-    h[ 6] += f[ 7] * g11_19;
-    h[ 7] += f[ 7] * g[ 0];
-    h[ 8] += f[ 7] * g[ 1];
-    h[ 9] += f[ 7] * g[ 2];
-    h[10] += f[ 7] * g[ 3];
-    h[11] += f[ 7] * g[ 4];
+    C[ 0] += A[ 7] * B5_19;
+    C[ 1] += A[ 7] * B6_19;
+    C[ 2] += A[ 7] * B7_19;
+    C[ 3] += A[ 7] * B8_19;
+    C[ 4] += A[ 7] * B9_19;
+    C[ 5] += A[ 7] * B10_19;
+    C[ 6] += A[ 7] * B11_19;
+    C[ 7] += A[ 7] * B[ 0];
+    C[ 8] += A[ 7] * B[ 1];
+    C[ 9] += A[ 7] * B[ 2];
+    C[10] += A[ 7] * B[ 3];
+    C[11] += A[ 7] * B[ 4];
 
     // Round  9/12
-    h[ 0] += f[ 8] * g4_19;
-    h[ 1] += f[ 8] * g5_19;
-    h[ 2] += f[ 8] * g6_19;
-    h[ 3] += f[ 8] * g7_19;
-    h[ 4] += f[ 8] * g8_19;
-    h[ 5] += f[ 8] * g9_19;
-    h[ 6] += f[ 8] * g10_19;
-    h[ 7] += f[ 8] * g11_19;
-    h[ 8] += f[ 8] * g[ 0];
-    h[ 9] += f[ 8] * g[ 1];
-    h[10] += f[ 8] * g[ 2];
-    h[11] += f[ 8] * g[ 3];
+    C[ 0] += A[ 8] * B4_19;
+    C[ 1] += A[ 8] * B5_19;
+    C[ 2] += A[ 8] * B6_19;
+    C[ 3] += A[ 8] * B7_19;
+    C[ 4] += A[ 8] * B8_19;
+    C[ 5] += A[ 8] * B9_19;
+    C[ 6] += A[ 8] * B10_19;
+    C[ 7] += A[ 8] * B11_19;
+    C[ 8] += A[ 8] * B[ 0];
+    C[ 9] += A[ 8] * B[ 1];
+    C[10] += A[ 8] * B[ 2];
+    C[11] += A[ 8] * B[ 3];
 
     // Round 10/12
-    h[ 0] += f[ 9] * g3_19;
-    h[ 1] += f[ 9] * g4_19;
-    h[ 2] += f[ 9] * g5_19;
-    h[ 3] += f[ 9] * g6_19;
-    h[ 4] += f[ 9] * g7_19;
-    h[ 5] += f[ 9] * g8_19;
-    h[ 6] += f[ 9] * g9_19;
-    h[ 7] += f[ 9] * g10_19;
-    h[ 8] += f[ 9] * g11_19;
-    h[ 9] += f[ 9] * g[ 0];
-    h[10] += f[ 9] * g[ 1];
-    h[11] += f[ 9] * g[ 2];
+    C[ 0] += A[ 9] * B3_19;
+    C[ 1] += A[ 9] * B4_19;
+    C[ 2] += A[ 9] * B5_19;
+    C[ 3] += A[ 9] * B6_19;
+    C[ 4] += A[ 9] * B7_19;
+    C[ 5] += A[ 9] * B8_19;
+    C[ 6] += A[ 9] * B9_19;
+    C[ 7] += A[ 9] * B10_19;
+    C[ 8] += A[ 9] * B11_19;
+    C[ 9] += A[ 9] * B[ 0];
+    C[10] += A[ 9] * B[ 1];
+    C[11] += A[ 9] * B[ 2];
 
     // Round 11/12
-    h[ 0] += f[10] * g2_19;
-    h[ 1] += f[10] * g3_19;
-    h[ 2] += f[10] * g4_19;
-    h[ 3] += f[10] * g5_19;
-    h[ 4] += f[10] * g6_19;
-    h[ 5] += f[10] * g7_19;
-    h[ 6] += f[10] * g8_19;
-    h[ 7] += f[10] * g9_19;
-    h[ 8] += f[10] * g10_19;
-    h[ 9] += f[10] * g11_19;
-    h[10] += f[10] * g[ 0];
-    h[11] += f[10] * g[ 1];
+    C[ 0] += A[10] * B2_19;
+    C[ 1] += A[10] * B3_19;
+    C[ 2] += A[10] * B4_19;
+    C[ 3] += A[10] * B5_19;
+    C[ 4] += A[10] * B6_19;
+    C[ 5] += A[10] * B7_19;
+    C[ 6] += A[10] * B8_19;
+    C[ 7] += A[10] * B9_19;
+    C[ 8] += A[10] * B10_19;
+    C[ 9] += A[10] * B11_19;
+    C[10] += A[10] * B[ 0];
+    C[11] += A[10] * B[ 1];
 
     // Round 12/12
-    h[ 0] += f[11] * g1_19;
-    h[ 1] += f[11] * g2_19;
-    h[ 2] += f[11] * g3_19;
-    h[ 3] += f[11] * g4_19;
-    h[ 4] += f[11] * g5_19;
-    h[ 5] += f[11] * g6_19;
-    h[ 6] += f[11] * g7_19;
-    h[ 7] += f[11] * g8_19;
-    h[ 8] += f[11] * g9_19;
-    h[ 9] += f[11] * g10_19;
-    h[10] += f[11] * g11_19;
-    h[11] += f[11] * g[ 0];
+    C[ 0] += A[11] * B1_19;
+    C[ 1] += A[11] * B2_19;
+    C[ 2] += A[11] * B3_19;
+    C[ 3] += A[11] * B4_19;
+    C[ 4] += A[11] * B5_19;
+    C[ 5] += A[11] * B6_19;
+    C[ 6] += A[11] * B7_19;
+    C[ 7] += A[11] * B8_19;
+    C[ 8] += A[11] * B9_19;
+    C[ 9] += A[11] * B10_19;
+    C[10] += A[11] * B11_19;
+    C[11] += A[11] * B[ 0];
 
-    fe12_squeeze(h);
+    fe12_squeeze(C);
 }
 
-void fe12_square(fe12 h, const fe12 f)
+void fe12_square(fe12 C, const fe12 A)
 {
-    fe12_mul(h, f, f);
+    double l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10;
+    double h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10;
+    double m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10;
+
+    // Precompute reduced A,B values
+    const double  A6_shr = 0x1p-128 * A[ 6];
+    const double  A7_shr = 0x1p-128 * A[ 7];
+    const double  A8_shr = 0x1p-128 * A[ 8];
+    const double  A9_shr = 0x1p-128 * A[ 9];
+    const double A10_shr = 0x1p-128 * A[10];
+    const double A11_shr = 0x1p-128 * A[11];
+
+    // Compute L
+    const double l00 = A[0] * A[0];
+    const double l01 = A[0] * A[1];
+    const double l02 = A[0] * A[2];
+    const double l03 = A[0] * A[3];
+    const double l04 = A[0] * A[4];
+    const double l05 = A[0] * A[5];
+    const double l11 = A[1] * A[1];
+    const double l12 = A[1] * A[2];
+    const double l13 = A[1] * A[3];
+    const double l14 = A[1] * A[4];
+    const double l15 = A[1] * A[5];
+    const double l22 = A[2] * A[2];
+    const double l23 = A[2] * A[3];
+    const double l24 = A[2] * A[4];
+    const double l25 = A[2] * A[5];
+    const double l33 = A[3] * A[3];
+    const double l34 = A[3] * A[4];
+    const double l35 = A[3] * A[5];
+    const double l44 = A[4] * A[4];
+    const double l45 = A[4] * A[5];
+    const double l55 = A[5] * A[5];
+    // L: add non-diagonals
+    l1 = l01;
+    l2 = l02;
+    l3 = l03 + l12;
+    l4 = l04 + l13;
+    l5 = l05 + l14 + l23;
+    l6 = l15 + l24;
+    l7 = l25 + l34;
+    l8 = l35;
+    l9 = l45;
+    // L: double non-diagonals and add diagonals
+    l0  =      l00;
+    l1  = l1 +       l1;
+    l2  = l2 + l11 + l2;
+    l3  = l3 +       l3;
+    l4  = l4 + l22 + l4;
+    l5  = l5 +       l5;
+    l6  = l6 + l33 + l6;
+    l7  = l7 +       l7;
+    l8  = l8 + l44 + l8;
+    l9  = l9 +       l9;
+    l10 =      l55;
+
+    // Compute H
+    const double h00 =  A6_shr *  A6_shr;
+    const double h01 =  A6_shr *  A7_shr;
+    const double h02 =  A6_shr *  A8_shr;
+    const double h03 =  A6_shr *  A9_shr;
+    const double h04 =  A6_shr * A10_shr;
+    const double h05 =  A6_shr * A11_shr;
+    const double h11 =  A7_shr *  A7_shr;
+    const double h12 =  A7_shr *  A8_shr;
+    const double h13 =  A7_shr *  A9_shr;
+    const double h14 =  A7_shr * A10_shr;
+    const double h15 =  A7_shr * A11_shr;
+    const double h22 =  A8_shr *  A8_shr;
+    const double h23 =  A8_shr *  A9_shr;
+    const double h24 =  A8_shr * A10_shr;
+    const double h25 =  A8_shr * A11_shr;
+    const double h33 =  A9_shr *  A9_shr;
+    const double h34 =  A9_shr * A10_shr;
+    const double h35 =  A9_shr * A11_shr;
+    const double h44 = A10_shr * A10_shr;
+    const double h45 = A10_shr * A11_shr;
+    const double h55 = A11_shr * A11_shr;
+    // H: add non-diagonals
+    h1 = h01;
+    h2 = h02;
+    h3 = h03 + h12;
+    h4 = h04 + h13;
+    h5 = h05 + h14 + h23;
+    h6 = h15 + h24;
+    h7 = h25 + h34;
+    h8 = h35;
+    h9 = h45;
+    // H: double non-diagonals and add diagonals
+    h0  =      h00;
+    h1  = h1 +       h1;
+    h2  = h2 + h11 + h2;
+    h3  = h3 +       h3;
+    h4  = h4 + h22 + h4;
+    h5  = h5 +       h5;
+    h6  = h6 + h33 + h6;
+    h7  = h7 +       h7;
+    h8  = h8 + h44 + h8;
+    h9  = h9 +       h9;
+    h10 =      h55;
+
+    // Compute M_hat
+    const double mA0 = (A[0] -  A6_shr);
+    const double mA1 = (A[1] -  A7_shr);
+    const double mA2 = (A[2] -  A8_shr);
+    const double mA3 = (A[3] -  A9_shr);
+    const double mA4 = (A[4] - A10_shr);
+    const double mA5 = (A[5] - A11_shr);
+
+    const double m00 = mA0 * mA0;
+    const double m01 = mA0 * mA1;
+    const double m02 = mA0 * mA2;
+    const double m03 = mA0 * mA3;
+    const double m04 = mA0 * mA4;
+    const double m05 = mA0 * mA5;
+    const double m11 = mA1 * mA1;
+    const double m12 = mA1 * mA2;
+    const double m13 = mA1 * mA3;
+    const double m14 = mA1 * mA4;
+    const double m15 = mA1 * mA5;
+    const double m22 = mA2 * mA2;
+    const double m23 = mA2 * mA3;
+    const double m24 = mA2 * mA4;
+    const double m25 = mA2 * mA5;
+    const double m33 = mA3 * mA3;
+    const double m34 = mA3 * mA4;
+    const double m35 = mA3 * mA5;
+    const double m44 = mA4 * mA4;
+    const double m45 = mA4 * mA5;
+    const double m55 = mA5 * mA5;
+    // M_hat: add non-diagonals
+    m1 = m01;
+    m2 = m02;
+    m3 = m03 + m12;
+    m4 = m04 + m13;
+    m5 = m05 + m14 + m23;
+    m6 = m15 + m24;
+    m7 = m25 + m34;
+    m8 = m35;
+    m9 = m45;
+    // M_mat: double non-diagonals and add diagonals
+    m0  =      m00;
+    m1  = m1 +       m1;
+    m2  = m2 + m11 + m2;
+    m3  = m3 +       m3;
+    m4  = m4 + m22 + m4;
+    m5  = m5 +       m5;
+    m6  = m6 + m33 + m6;
+    m7  = m7 +       m7;
+    m8  = m8 + m44 + m8;
+    m9  = m9 +       m9;
+    m10 =      m55;
+
+    // Sum up the accs into C
+    C[ 0] =  l0 + 0x26p-128 * ( -m6 +  l6 +  h6) + 0x26*h0;
+    C[ 1] =  l1 + 0x26p-128 * ( -m7 +  l7 +  h7) + 0x26*h1;
+    C[ 2] =  l2 + 0x26p-128 * ( -m8 +  l8 +  h8) + 0x26*h2;
+    C[ 3] =  l3 + 0x26p-128 * ( -m9 +  l9 +  h9) + 0x26*h3;
+    C[ 4] =  l4 + 0x26p-128 * (-m10 + l10 + h10) + 0x26*h4;
+    C[ 5] =  l5                                  + 0x26*h5;
+    C[ 6] =  l6 +  0x1p+128 * ( -m0 +  l0 +  h0) + 0x26*h6;
+    C[ 7] =  l7 +  0x1p+128 * ( -m1 +  l1 +  h1) + 0x26*h7;
+    C[ 8] =  l8 +  0x1p+128 * ( -m2 +  l2 +  h2) + 0x26*h8;
+    C[ 9] =  l9 +  0x1p+128 * ( -m3 +  l3 +  h3) + 0x26*h9;
+    C[10] = l10 +  0x1p+128 * ( -m4 +  l4 +  h4) + 0x26*h10;
+    C[11] =        0x1p+128 * ( -m5 +  l5 +  h5);
+    fe12_squeeze(C);
 }

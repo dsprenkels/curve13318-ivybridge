@@ -41,8 +41,8 @@ fe12_mul_schoolbook = ref12.crypto_scalarmult_curve13318_ref12_fe12_mul_schoolbo
 fe12_mul_schoolbook.argtypes = [fe12_type, fe12_type, fe12_type]
 fe12_mul_karatsuba = ref12.crypto_scalarmult_curve13318_ref12_fe12_mul_karatsuba
 fe12_mul_karatsuba.argtypes = [fe12_type, fe12_type, fe12_type]
-fe12_square = ref12.crypto_scalarmult_curve13318_ref12_fe12_square
-fe12_square.argtypes = [fe12_type, fe12_type]
+fe12_square_karatsuba = ref12.crypto_scalarmult_curve13318_ref12_fe12_square_karatsuba
+fe12_square_karatsuba.argtypes = [fe12_type, fe12_type]
 fe10_tobytes = ref12.crypto_scalarmult_curve13318_ref12_fe10_tobytes
 fe10_tobytes.argtypes = [ctypes.c_ubyte * 32, fe10_type]
 fe10_mul = ref12.crypto_scalarmult_curve13318_ref12_fe10_mul
@@ -143,6 +143,14 @@ class TestFE12(unittest.TestCase):
         actual = sum(F(int(x)) for x in z_c)
         self.assertEqual(actual, expected)
 
+    @given(st_fe12_squeezed_0, st_fe12_squeezed_1, st.booleans())
+    def test_mul_schoolbook(self, f_limbs, g_limbs, swap):
+        self.do_test_mul(fe12_mul_schoolbook)(self, f_limbs, g_limbs, swap)
+
+    @given(st_fe12_squeezed_0, st_fe12_squeezed_1, st.booleans())
+    def test_mul_karatsuba(self, f_limbs, g_limbs, swap):
+        self.do_test_mul(fe12_mul_karatsuba)(self, f_limbs, g_limbs, swap)
+
     @staticmethod
     def do_test_mul(fn):
         def do_test_mul_inner(self, f_limbs, g_limbs, swap):
@@ -159,20 +167,12 @@ class TestFE12(unittest.TestCase):
             self.assertEqual(actual, expected)
         return do_test_mul_inner
 
-    @given(st_fe12_squeezed_0, st_fe12_squeezed_1, st.booleans())
-    def test_mul_schoolbook(self, f_limbs, g_limbs, swap):
-        self.do_test_mul(fe12_mul_schoolbook)(self, f_limbs, g_limbs, swap)
-
-    @given(st_fe12_squeezed_0, st_fe12_squeezed_1, st.booleans())
-    def test_mul_karatsuba(self, f_limbs, g_limbs, swap):
-        self.do_test_mul(fe12_mul_karatsuba)(self, f_limbs, g_limbs, swap)
-
     @given(st_fe12_squeezed_0)
-    def test_square(self, f_limbs):
+    def test_square_karatsuba(self, f_limbs):
         f, f_c = make_fe12(f_limbs)
         _, h_c = make_fe12()
         expected = f**2
-        fe12_square(h_c, f_c)
+        fe12_square_karatsuba(h_c, f_c)
         actual = F(fe12_val(h_c))
         self.assertEqual(actual, expected)
 
