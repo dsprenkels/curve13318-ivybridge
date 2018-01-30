@@ -34,7 +34,9 @@ static inline void ge_zero(ge point) {
 Copy a ge value to another ge type
 */
 static inline void ge_copy(ge dest, const ge src) {
-    for (unsigned int i = 0; i < 3; i++) fe12_copy(dest[i], src[i]);
+    fe12_copy(dest[0], src[0]);
+    fe12_copy(dest[1], src[1]);
+    fe12_copy(dest[2], src[2]);
 }
 
 /*

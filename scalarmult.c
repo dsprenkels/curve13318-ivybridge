@@ -9,9 +9,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define select crypto_scalarmult_curve13318_ref12_select
+#define do_precomputation crypto_scalarmult_curve13318_ref12_do_precomputation
+#define ladderstep crypto_scalarmult_curve13318_ref12_ladderstep
+#define ladder crypto_scalarmult_curve13318_ref12_ladder
 #define scalarmult crypto_scalarmult_curve13318_scalarmult
 
-static void cmov(ge dest, const ge src, bool c)
+static inline void cmov(ge dest, const ge src, bool c)
 {
     for (unsigned int i = 0; i < 3; i++) {
         for (unsigned int j = 0; j < 12; j++) {
@@ -20,12 +24,32 @@ static void cmov(ge dest, const ge src, bool c)
     }
 }
 
-static void select(ge dest, uint8_t idx, const ge ptable[16])
+void select(ge dest, uint8_t idx, const ge ptable[16])
 {
     for (unsigned int i = 0; i < 16; i++) cmov(dest, ptable[i], i == idx);
 }
 
-static void ladderstep(ge q, ge ptable[16], uint8_t bits)
+void do_precomputation(ge ptable[16], const ge p)
+{
+    ge_copy(ptable[0], p);
+    ge_double(ptable[1], ptable[0]);
+    ge_add(ptable[2], ptable[1], ptable[0]);
+    ge_double(ptable[3], ptable[1]);
+    ge_add(ptable[4], ptable[3], ptable[0]);
+    ge_double(ptable[5], ptable[2]);
+    ge_add(ptable[6], ptable[5], ptable[0]);
+    ge_double(ptable[7], ptable[3]);
+    ge_add(ptable[8], ptable[7], ptable[0]);
+    ge_double(ptable[9], ptable[4]);
+    ge_add(ptable[10], ptable[9], ptable[0]);
+    ge_double(ptable[11], ptable[5]);
+    ge_add(ptable[12], ptable[11], ptable[0]);
+    ge_double(ptable[13], ptable[6]);
+    ge_add(ptable[14], ptable[13], ptable[0]);
+    ge_double(ptable[15], ptable[7]);
+}
+
+void ladderstep(ge q, ge ptable[16], uint8_t bits)
 {
     ge p;
     // Our lookup table is one-based indexed. The neutral element is not stored
@@ -48,28 +72,12 @@ static void ladderstep(ge q, ge ptable[16], uint8_t bits)
 
 }
 
-static void ladder(const uint8_t *e, ge q, const ge p)
+void ladder(const uint8_t *e, ge q, const ge p)
 {
     ge ptable[16];
     uint8_t w[51], zeroth_window;
 
-    // Do precomputation
-    ge_copy(ptable[0], p);
-    ge_double(ptable[1], ptable[0]);
-    ge_add(ptable[2], ptable[1], ptable[0]);
-    ge_double(ptable[3], ptable[1]);
-    ge_add(ptable[4], ptable[3], ptable[0]);
-    ge_double(ptable[5], ptable[2]);
-    ge_add(ptable[6], ptable[5], ptable[0]);
-    ge_double(ptable[7], ptable[3]);
-    ge_add(ptable[8], ptable[7], ptable[0]);
-    ge_double(ptable[9], ptable[4]);
-    ge_add(ptable[10], ptable[9], ptable[0]);
-    ge_double(ptable[11], ptable[5]);
-    ge_add(ptable[12], ptable[11], ptable[0]);
-    ge_double(ptable[13], ptable[6]);
-    ge_add(ptable[14], ptable[13], ptable[0]);
-    ge_double(ptable[15], ptable[7]);
+    do_precomputation(ptable, p);
 
     // Decode the key bytes into windows and ripple the subtraction carry
     w[50] = e[ 0] & 0x1F;
