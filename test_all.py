@@ -16,7 +16,6 @@ from hypothesis import assume, example, given, note, seed, settings, strategies 
 
 settings.register_profile("ci", settings(deadline=None,
                                          max_examples=10000,
-                                         max_iterations=1000000,
                                          timeout=unlimited))
 
 if os.environ.get('CI', None) == '1':
@@ -31,6 +30,7 @@ fe12_frozen_type = ctypes.c_double * 6
 fe10_type = ctypes.c_uint64 * 10
 fe10_frozen_type = ctypes.c_uint64 * 5
 ge_type = fe12_type * 3
+fe12x4_type = ctypes.c_double * 48
 
 # Define functions
 fe12_frombytes = ref12.crypto_scalarmult_curve13318_ref12_fe12_frombytes
@@ -67,6 +67,9 @@ ge_double = ref12.crypto_scalarmult_curve13318_ref12_ge_double
 ge_double.argtypes = [ge_type] * 2
 scalarmult = ref12.crypto_scalarmult_curve13318_scalarmult
 scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte * 64];
+
+fe12x4_squeeze = ref12.crypto_scalarmult_curve13318_ref12_fe12x4_squeeze
+fe12x4_squeeze.argtypes = [fe12x4_type]
 
 
 # Custom testing strategies
@@ -174,6 +177,23 @@ class TestFE12(unittest.TestCase):
         expected = f**2
         fe12_square_karatsuba(h_c, f_c)
         actual = F(fe12_val(h_c))
+        self.assertEqual(actual, expected)
+
+class TestFE12x4(unittest.TestCase):
+    @given(st_fe12_unsqueezed, st.integers(0, 3))
+    def test_squeeze(self, limbs, lane):
+        expected, vz_c = make_fe12x4(limbs, lane)
+        ret = fe12x4_squeeze(vz_c)
+
+        # Are all limbs reduced?
+        exponent = 0
+        for i, limb in enumerate(vz_c[lane::4]):
+            # Check theorem 2.4
+            assert int(limb) % 2**exponent == 0, (i, hex(int(limb)), exponent)
+            exponent += 22 if i % 4 == 0 else 21
+            assert abs(int(limb)) <= 2**(exponent-1), (i, hex(int(limb)), exponent)
+        # Decode the value
+        actual = sum(F(int(x)) for x in vz_c[lane::4])
         self.assertEqual(actual, expected)
 
 
@@ -512,8 +532,24 @@ def make_fe12(limbs=[]):
         exponent += 22 if i % 4 == 0 else 21
     return z, z_c
 
+def make_fe12x4(limbs, lane):
+    assert 0 <= lane < 4
+    z, z_c = make_fe12(limbs)
+    stashed = []
+    vz_c = (ctypes.c_double * 48)(0.0)
+    while ctypes.addressof(vz_c) % 32 != 0:
+        # Try until we have a properly aligned array
+        stashed.append(vz_c) # save the old one or else Python is going to be smart on us
+        vz_c = (ctypes.c_double * 48)(0.0)
+    for i, limb in enumerate(z_c):
+        vz_c[4*i + lane] = limb
+    return z, vz_c
+
 def fe12_val(z):
     return sum(int(x) for x in z)
+
+def fe12x4_val(z, lane):
+    return sum(int(x) for x in z[lane::4])
 
 def make_fe10(initial_value=[]):
     z = F(0)
