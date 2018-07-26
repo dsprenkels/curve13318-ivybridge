@@ -1,21 +1,22 @@
 #include "fe12.h"
 #include <inttypes.h>
+#include <xmmintrin.h>
 
 static inline uint32_t load_3(const uint8_t *in)
 {
-  uint32_t ret;
-  ret = (uint32_t) in[0];
-  ret |= ((uint32_t) in[1]) << 8;
-  ret |= ((uint32_t) in[2]) << 16;
-  return ret;
+    uint32_t ret;
+    ret = (uint32_t) in[0];
+    ret |= ((uint32_t) in[1]) << 8;
+    ret |= ((uint32_t) in[2]) << 16;
+    return ret;
 }
 
 static inline uint32_t load_2(const uint8_t *in)
 {
-  uint32_t ret;
-  ret = (uint32_t) in[0];
-  ret |= ((uint32_t) in[1]) << 8;
-  return ret;
+    uint32_t ret;
+    ret = (uint32_t) in[0];
+    ret |= ((uint32_t) in[1]) << 8;
+    return ret;
 }
 
 void fe12_frombytes(fe12 z, const uint8_t *in)

@@ -6,6 +6,7 @@
 */
 
 #include "ge.h"
+#include "mxcsr.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -196,6 +197,9 @@ int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
     ge p, q;
     uint8_t e[32];
 
+    // Prologue: save the MxCsr register state
+    const unsigned int saved_mxcsr = replace_mxcsr();
+
     for (unsigned int i = 0; i < 32; i++) e[i] = key[i];
     e[31] &= 127; // We do not use the 255'th bit from the key
 
@@ -205,5 +209,10 @@ int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
     }
     ladder(e, q, p);
     ge_tobytes(out, q);
+
+    // Epilogue: restore the MxCsr register to its original value
+    const bool mxcsr_ok = restore_mxcsr(saved_mxcsr);
+    if (!mxcsr_ok) return -1;
+
     return 0;
 }

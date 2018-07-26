@@ -40,6 +40,7 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     vmovdqa ymm10, yword [rdi+320]
     vmovdqa ymm11, yword [rdi+352]
 
+%macro fe12x4_squeeze_inner 0
     ; load precisionloss values
     vmovdqa ymm12, yword [rel precisionloss0]
     vmovdqa ymm13, yword [rel precisionloss6]
@@ -138,6 +139,8 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     vaddpd ymm2, ymm2, ymm15
     vsubpd ymm7, ymm7, ymm14
     vsubpd ymm1, ymm1, ymm15
+%endmacro
+    fe12x4_squeeze_inner
 
     ; store field element
     vmovdqa yword [rdi], ymm0
@@ -156,7 +159,6 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     ret
 
 
-
 section .rodata:
 
 align 32, db 0
@@ -173,11 +175,3 @@ precisionloss9: dq 0x3p264,0x3p264,0x3p264,0x3p264
 precisionloss10: dq 0x3p285,0x3p285,0x3p285,0x3p285
 precisionloss11: dq 0x3p306,0x3p306,0x3p306,0x3p306
 reduceconstant: dq 0x13p-255,0x13p-255,0x13p-255,0x13p-255
-
-
-
-
-    ; double t0, t1;
-    ; t0 = z[0] + 0x3p73 - 0x3p73; // Round 1a
-    ; z[0] -= t0;
-    ; z[1] += t0;
