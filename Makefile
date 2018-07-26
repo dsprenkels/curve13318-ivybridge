@@ -1,24 +1,31 @@
-CFLAGS += -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
-          -Wstrict-prototypes -fPIC -g -O2 -masm=intel -march=ivybridge
-SRCS = fe10.c \
-       fe12.asm \
-       fe12_old.c \
-       fe_convert.c \
-       ge.c \
-       scalarmult.c
-OBJS := fe10.o \
-        fe12.o \
-        fe12_old.o \
-        fe_convert.o \
-        ge.o \
-        scalarmult.o
+NASM :=	  nasm -g -f elf64 $^
+
+CFLAGS +=   -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
+			-Wstrict-prototypes -fPIC -g -O2 -masm=intel -march=ivybridge
+
+H_SRCS :=   fe_convert.h \
+			fe10.h \
+			fe12.h \
+			ge.h \
+			mxcsr.h
+ASM_SCRS := fe12.asm
+C_SRCS :=   mxcsr.c \
+            fe10.c \
+			fe12_old.c \
+			fe_convert.c \
+			ge.c \
+			scalarmult.c
+
+ASM_OBJS := $(ASM_SCRS:%.asm=%.o)
+C_OBJS :=   $(C_SRCS:%.c=%.o)
+
 
 all: libref12.so
 
 %.o: %.asm
-	nasm -g -f elf64 -l $%.lst $^
+	$(NASM) -g -f elf64 -l $(patsubst %.o,%.lst,$@) -o $@ $<
 
-libref12.so: $(OBJS)
+libref12.so: $(ASM_OBJS) $(C_OBJS)
 	$(CC) $(CFLAGS) -shared -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 .PHONY: check
@@ -27,4 +34,13 @@ check: libref12.so
 
 .PHONY: clean
 clean:
-	$(RM) *.o *.gch *.a *.out *.so
+	$(RM) *.o *.gch *.a *.out *.so *.d
+
+%.d: %.asm
+	$(NASM) -MT $(patsubst %.d,%.o,$@) -M $< >$@
+
+%.d: %.c
+	$(CC) $(CFLAGS) -M $< >$@
+
+include $(ASM_SCRS:%.asm=%.d)
+include $(C_SRCS:%.c=%.d)
