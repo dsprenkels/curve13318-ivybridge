@@ -34,7 +34,7 @@ check: libref12.so
 
 .PHONY: clean
 clean:
-	$(RM) *.o *.gch *.a *.out *.so *.d
+	$(RM) *.o *.gch *.a *.out *.so *.d *.lst
 
 %.d: %.asm
 	$(NASM) -MT $(patsubst %.d,%.o,$@) -M $< >$@
