@@ -42,16 +42,16 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
 
 %macro fe12x4_squeeze_inner 0
     ; load precisionloss values
-    vmovdqa ymm12, yword [rel precisionloss0]
-    vmovdqa ymm13, yword [rel precisionloss6]
+    vbroadcastsd ymm12, qword [rel precisionloss0]
+    vbroadcastsd ymm13, qword [rel precisionloss6]
 
     ; round 1
     vaddpd ymm14, ymm0, ymm12
     vaddpd ymm15, ymm6, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vmovdqa ymm12, yword [rel precisionloss1]
-    vmovdqa ymm13, yword [rel precisionloss7]
+    vbroadcastsd ymm12, qword [rel precisionloss1]
+    vbroadcastsd ymm13, qword [rel precisionloss7]
     vaddpd ymm1, ymm1, ymm14
     vaddpd ymm7, ymm7, ymm15
     vsubpd ymm0, ymm0, ymm14
@@ -62,8 +62,8 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     vaddpd ymm15, ymm7, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vmovdqa ymm12, yword [rel precisionloss2]
-    vmovdqa ymm13, yword [rel precisionloss8]
+    vbroadcastsd ymm12, qword [rel precisionloss2]
+    vbroadcastsd ymm13, qword [rel precisionloss8]
     vaddpd ymm2, ymm2, ymm14
     vaddpd ymm8, ymm8, ymm15
     vsubpd ymm1, ymm1, ymm14
@@ -74,8 +74,8 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     vaddpd ymm15, ymm8, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vmovdqa ymm12, yword [rel precisionloss3]
-    vmovdqa ymm13, yword [rel precisionloss9]
+    vbroadcastsd ymm12, qword [rel precisionloss3]
+    vbroadcastsd ymm13, qword [rel precisionloss9]
     vaddpd ymm3, ymm3, ymm14
     vaddpd ymm9, ymm9, ymm15
     vsubpd ymm2, ymm2, ymm14
@@ -86,8 +86,8 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     vaddpd ymm15, ymm9, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vmovdqa ymm12, yword [rel precisionloss4]
-    vmovdqa ymm13, yword [rel precisionloss10]
+    vbroadcastsd ymm12, qword [rel precisionloss4]
+    vbroadcastsd ymm13, qword [rel precisionloss10]
     vaddpd ymm4, ymm4, ymm14
     vaddpd ymm10, ymm10, ymm15
     vsubpd ymm3, ymm3, ymm14
@@ -98,8 +98,8 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     vaddpd ymm15, ymm10, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vmovdqa ymm12, yword [rel precisionloss5]
-    vmovdqa ymm13, yword [rel precisionloss11]
+    vbroadcastsd ymm12, qword [rel precisionloss5]
+    vbroadcastsd ymm13, qword [rel precisionloss11]
     vaddpd ymm5, ymm5, ymm14
     vaddpd ymm11, ymm11, ymm15
     vsubpd ymm4, ymm4, ymm14
@@ -110,11 +110,12 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     vaddpd ymm15, ymm11, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vmovdqa ymm12, yword [rel precisionloss6]
-    vmovdqa ymm13, yword [rel precisionloss0]
+    vbroadcastsd ymm13, qword [rel reduceconstant]
     vsubpd ymm5, ymm5, ymm14
     vsubpd ymm11, ymm11, ymm15
-    vmulpd ymm15, ymm15, yword [rel reduceconstant]
+    vmulpd ymm15, ymm15, ymm13
+    vbroadcastsd ymm12, qword [rel precisionloss6]
+    vbroadcastsd ymm13, qword [rel precisionloss0]
     vaddpd ymm6, ymm6, ymm14
     vaddpd ymm0, ymm0, ymm15
 
@@ -123,8 +124,8 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     vaddpd ymm15, ymm0, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vmovdqa ymm12, yword [rel precisionloss7]
-    vmovdqa ymm13, yword [rel precisionloss1]
+    vbroadcastsd ymm12, qword [rel precisionloss7]
+    vbroadcastsd ymm13, qword [rel precisionloss1]
     vaddpd ymm7, ymm7, ymm14
     vaddpd ymm1, ymm1, ymm15
     vsubpd ymm6, ymm6, ymm14
@@ -161,17 +162,17 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
 
 section .rodata:
 
-align 32, db 0
-precisionloss0: dq 0x3p73,0x3p73,0x3p73,0x3p73
-precisionloss1: dq 0x3p94,0x3p94,0x3p94,0x3p94
-precisionloss2: dq 0x3p115,0x3p115,0x3p115,0x3p115
-precisionloss3: dq 0x3p136,0x3p136,0x3p136,0x3p136
-precisionloss4: dq 0x3p158,0x3p158,0x3p158,0x3p158
-precisionloss5: dq 0x3p179,0x3p179,0x3p179,0x3p179
-precisionloss6: dq 0x3p200,0x3p200,0x3p200,0x3p200
-precisionloss7: dq 0x3p221,0x3p221,0x3p221,0x3p221
-precisionloss8: dq 0x3p243,0x3p243,0x3p243,0x3p243
-precisionloss9: dq 0x3p264,0x3p264,0x3p264,0x3p264
-precisionloss10: dq 0x3p285,0x3p285,0x3p285,0x3p285
-precisionloss11: dq 0x3p306,0x3p306,0x3p306,0x3p306
-reduceconstant: dq 0x13p-255,0x13p-255,0x13p-255,0x13p-255
+align 8, db 0
+precisionloss0: dq 0x3p73
+precisionloss1: dq 0x3p94
+precisionloss2: dq 0x3p115
+precisionloss3: dq 0x3p136
+precisionloss4: dq 0x3p158
+precisionloss5: dq 0x3p179
+precisionloss6: dq 0x3p200
+precisionloss7: dq 0x3p221
+precisionloss8: dq 0x3p243
+precisionloss9: dq 0x3p264
+precisionloss10: dq 0x3p285
+precisionloss11: dq 0x3p306
+reduceconstant: dq 0x13p-255
