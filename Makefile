@@ -8,7 +8,7 @@ H_SRCS :=   fe_convert.h \
 			fe12.h \
 			ge.h \
 			mxcsr.h
-ASM_SCRS := fe12.asm
+ASM_SCRS := fe12_squeeze.asm
 C_SRCS :=   mxcsr.c \
             fe10.c \
 			fe12_old.c \
