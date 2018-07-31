@@ -1,4 +1,4 @@
-; Field arithmetic for integers modulo 2^255 - 19
+; Carry ripple implementation for integers modulo 2^255 - 19
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
 
