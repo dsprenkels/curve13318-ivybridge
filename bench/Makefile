@@ -1,9 +1,9 @@
 NASM :=	  nasm -g -f elf64 $^
 
 CFLAGS +=   -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
-			-Wstrict-prototypes -fPIC -g -O2 -masm=intel -march=ivybridge
+			-Wstrict-prototypes -fPIC -O2 -masm=intel -march=ivybridge
 
-BENCHMARKS := squeeze
+BENCHMARKS := squeeze f64_div128
 ASM_SCRS := $(wildcard *.asm)
 C_SRCS :=   $(wildcard *.c)
 ASM_OBJS := $(ASM_SCRS:%.asm=%.o)
@@ -50,7 +50,7 @@ unsetup:
 	echo '0' | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null
 
 %.o: %.asm
-	$(NASM) -g -f elf64 -l $(patsubst %.o,%.lst,$@) -o $@ $<
+	$(NASM) -f elf64 -l $(patsubst %.o,%.lst,$@) -o $@ $<
 
 %.d: %.asm
 	$(NASM) -MT $(patsubst %.d,%.o,$@) -M $< >$@
