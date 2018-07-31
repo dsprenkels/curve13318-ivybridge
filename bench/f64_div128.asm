@@ -137,5 +137,5 @@ f64_div128_mixed:
 section .rodata:
 
 align 8, db 0
-shiftright_mul: dq 0x1p-128, 0x1p-128, 0x1p-128, 0x1p-128
-shiftright_and: dq 0xF7FFFFFFFFFFFFFF, 0xF7FFFFFFFFFFFFFF, 0xF7FFFFFFFFFFFFFF, 0xF7FFFFFFFFFFFFFF
+shiftright_mul: times 4 dq 0x1p-128
+shiftright_and: times 4 dq 0xF7FFFFFFFFFFFFFF
