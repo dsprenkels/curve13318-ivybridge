@@ -1,6 +1,6 @@
 NASM :=	  nasm -g -f elf64 $^
 
-CFLAGS +=   -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
+CFLAGS +=   -g -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
 			-Wstrict-prototypes -fPIC -O2 -masm=intel -march=ivybridge
 
 BENCHMARKS := squeeze f64_div128 f64_load
