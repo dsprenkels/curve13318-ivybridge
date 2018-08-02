@@ -27,18 +27,18 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     ;   - ymm14,ymm15:  two temporary registers for t0 and t1
 
     ; load field element
-    vmovdqa ymm0, yword [rdi]
-    vmovdqa ymm1, yword [rdi+32]
-    vmovdqa ymm2, yword [rdi+64]
-    vmovdqa ymm3, yword [rdi+96]
-    vmovdqa ymm4, yword [rdi+128]
-    vmovdqa ymm5, yword [rdi+160]
-    vmovdqa ymm6, yword [rdi+192]
-    vmovdqa ymm7, yword [rdi+224]
-    vmovdqa ymm8, yword [rdi+256]
-    vmovdqa ymm9, yword [rdi+288]
-    vmovdqa ymm10, yword [rdi+320]
-    vmovdqa ymm11, yword [rdi+352]
+    vmovapd ymm0, yword [rdi]
+    vmovapd ymm1, yword [rdi+32]
+    vmovapd ymm2, yword [rdi+64]
+    vmovapd ymm3, yword [rdi+96]
+    vmovapd ymm4, yword [rdi+128]
+    vmovapd ymm5, yword [rdi+160]
+    vmovapd ymm6, yword [rdi+192]
+    vmovapd ymm7, yword [rdi+224]
+    vmovapd ymm8, yword [rdi+256]
+    vmovapd ymm9, yword [rdi+288]
+    vmovapd ymm10, yword [rdi+320]
+    vmovapd ymm11, yword [rdi+352]
 
 %macro fe12x4_squeeze_inner 0
     ; load precisionloss values
@@ -144,18 +144,18 @@ crypto_scalarmult_curve13318_ref12_fe12x4_squeeze:
     fe12x4_squeeze_inner
 
     ; store field element
-    vmovdqa yword [rdi], ymm0
-    vmovdqa yword [rdi+32], ymm1
-    vmovdqa yword [rdi+64], ymm2
-    vmovdqa yword [rdi+96], ymm3
-    vmovdqa yword [rdi+128], ymm4
-    vmovdqa yword [rdi+160], ymm5
-    vmovdqa yword [rdi+192], ymm6
-    vmovdqa yword [rdi+224], ymm7
-    vmovdqa yword [rdi+256], ymm8
-    vmovdqa yword [rdi+288], ymm9
-    vmovdqa yword [rdi+320], ymm10
-    vmovdqa yword [rdi+352], ymm11
+    vmovapd yword [rdi], ymm0
+    vmovapd yword [rdi+32], ymm1
+    vmovapd yword [rdi+64], ymm2
+    vmovapd yword [rdi+96], ymm3
+    vmovapd yword [rdi+128], ymm4
+    vmovapd yword [rdi+160], ymm5
+    vmovapd yword [rdi+192], ymm6
+    vmovapd yword [rdi+224], ymm7
+    vmovapd yword [rdi+256], ymm8
+    vmovapd yword [rdi+288], ymm9
+    vmovapd yword [rdi+320], ymm10
+    vmovapd yword [rdi+352], ymm11
 
     ret
 
