@@ -23,29 +23,25 @@ $(BENCHMARKS): $(patsubst %,%.o,$@) main.o
 setup:
 	# Disable turboboost
 	echo '1' | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null
-	# Disable hyperthreading cores
-	echo '0' | sudo tee /sys/devices/system/cpu/cpu4/online >/dev/null
-	echo '0' | sudo tee /sys/devices/system/cpu/cpu5/online >/dev/null
-	echo '0' | sudo tee /sys/devices/system/cpu/cpu6/online >/dev/null
-	echo '0' | sudo tee /sys/devices/system/cpu/cpu7/online >/dev/null
 	# Disable cpu scaling
 	echo 'performance' | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor >/dev/null
 	echo 'performance' | sudo tee /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor >/dev/null
 	echo 'performance' | sudo tee /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor >/dev/null
 	echo 'performance' | sudo tee /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor >/dev/null
+	# Disable hyperthreading cores
+	echo '0' | sudo tee /sys/devices/system/cpu/cpu2/online >/dev/null
+	echo '0' | sudo tee /sys/devices/system/cpu/cpu3/online >/dev/null
 
 .PHONY: unsetup
 unsetup:
+	# Enable hyperthreading cores
+	echo '1' | sudo tee /sys/devices/system/cpu/cpu2/online >/dev/null
+	echo '1' | sudo tee /sys/devices/system/cpu/cpu3/online >/dev/null
 	# Enable cpu scaling
 	echo 'powersave' | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor >/dev/null
 	echo 'powersave' | sudo tee /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor >/dev/null
 	echo 'powersave' | sudo tee /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor >/dev/null
 	echo 'powersave' | sudo tee /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor >/dev/null
-	# Enable hyperthreading cores
-	echo '1' | sudo tee /sys/devices/system/cpu/cpu4/online >/dev/null
-	echo '1' | sudo tee /sys/devices/system/cpu/cpu5/online >/dev/null
-	echo '1' | sudo tee /sys/devices/system/cpu/cpu6/online >/dev/null
-	echo '1' | sudo tee /sys/devices/system/cpu/cpu7/online >/dev/null
 	# Enable turboboost
 	echo '0' | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null
 
