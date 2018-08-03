@@ -13,12 +13,12 @@ fi
 
 if [[ $1 == 'check' ]]; then
     # Alias to ./roku main check
-    exec $0 main check
+    exec "$0" main check
 fi
 
-( cd "$(dirname $0)" && make clean >/dev/null )
-( cd "$(dirname $0)/bench" && make clean >/dev/null )
-rsync --exclude=.* -ruh --delete "$(dirname $0)" "roku:ref12/"
+( cd "$(dirname "$0")" && make clean >/dev/null )
+( cd "$(dirname "$0")/bench" && make clean >/dev/null )
+rsync --exclude=.* -ruh --delete "$(dirname "$0")" "roku:ref12/"
 
 if [[ $1 == 'main' ]]; then
     ssh roku bash -v -s <<EOF
