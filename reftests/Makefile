@@ -3,34 +3,21 @@ NASM :=	  nasm -g -f elf64 $^
 CFLAGS +=   -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
 			-Wstrict-prototypes -fPIC -g -O2 -masm=intel -march=ivybridge
 
-H_SRCS :=   fe_convert.h \
-			fe10.h \
-			fe12.h \
-			ge.h \
-			mxcsr.h
-ASM_SCRS := fe12_mul.asm \
-            fe12_squeeze.asm
-C_SRCS :=   mxcsr.c \
-            fe10.c \
-			fe12_old.c \
-			fe_convert.c \
-			ge.c \
-			scalarmult.c
+H_SRCS :=   fe.h
+ASM_SCRS := fe12_mul_1.asm
+C_SRCS :=   fe12_mul_1_ref.c
 
 ASM_OBJS := $(ASM_SCRS:%.asm=%.o)
 C_OBJS :=   $(C_SRCS:%.c=%.o)
 
-
-all: libref12.so
-
 %.o: %.asm
 	$(NASM) -g -f elf64 -l $(patsubst %.o,%.lst,$@) -o $@ $<
 
-libref12.so: $(ASM_OBJS) $(C_OBJS)
+libreftests.so: $(ASM_OBJS) $(C_OBJS)
 	$(CC) $(CFLAGS) -shared -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 .PHONY: check
-check: libref12.so
+check: libreftests.so
 	sage -python test_all.py -v
 
 .PHONY: clean
