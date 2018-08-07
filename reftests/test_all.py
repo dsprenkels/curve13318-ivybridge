@@ -28,11 +28,15 @@ reftests = ctypes.CDLL(os.path.join(os.path.abspath('.'), 'libreftests.so'))
 fe12_type = ctypes.c_double * 12
 fe12x4_type = ctypes.c_double * 48
 
-# Define functions
+# Define functionsl10
 fe12_mul_1 = reftests.fe12_mul_1
 fe12_mul_1.argtypes = [fe12x4_type, fe12x4_type, fe12x4_type]
 fe12_mul_1_ref = reftests.fe12_mul_1_ref
 fe12_mul_1_ref.argtypes = [fe12_type, fe12_type, fe12_type]
+fe12_mul_2 = reftests.fe12_mul_2
+fe12_mul_2.argtypes = [fe12x4_type, fe12x4_type, fe12x4_type]
+fe12_mul_2_ref = reftests.fe12_mul_2_ref
+fe12_mul_2_ref.argtypes = [fe12_type, fe12_type, fe12_type]
 
 # Custom testing strategies
 
@@ -67,26 +71,36 @@ st_fe12_squeezed_1 = st.tuples(
 
 
 class TestFE12x4(unittest.TestCase):
+    @staticmethod
+    def do_test_mul(test_mul_fn, ref_mul_fn):
+        def do_test_mul_inner(self, f_limbs, g_limbs, lane, swap):
+            fhex = lambda x: [x.hex() for x in list(x)]
+            if swap:
+                f_limbs, g_limbs = g_limbs, f_limbs
+            _, f = make_fe12(f_limbs)
+            _, g = make_fe12(g_limbs)
+            _, h = make_fe12()
+            ref_mul_fn(h, f, g)
+            note("  f: {}".format(fhex(f)))
+            note("  g: {}".format(fhex(g)))
+            note("  h: {}".format(fhex(h)))
+            _, fx4 = make_fe12x4(f_limbs, lane)
+            _, gx4 = make_fe12x4(g_limbs, lane)
+            _, hx4 = make_fe12x4([], lane)
+            test_mul_fn(hx4, fx4, gx4)
+            note("fx4: {}".format(fhex(list(fx4)[lane::4])))
+            note("gx4: {}".format(fhex(list(gx4)[lane::4])))
+            note("hx4: {}".format(fhex(list(hx4)[lane::4])))
+            self.assertEqual(fe12x4_val(hx4, lane), fe12_val(h))
+        return do_test_mul_inner
+
     @given(st_fe12_squeezed_0, st_fe12_squeezed_1, st.integers(0, 3), st.booleans())
     def test_mul_1(self, f_limbs, g_limbs, lane, swap):
-        fhex = lambda x: [x.hex() for x in list(x)]
-        if swap:
-            f_limbs, g_limbs = g_limbs, f_limbs
-        _, f = make_fe12(f_limbs)
-        _, g = make_fe12(g_limbs)
-        _, h = make_fe12()
-        fe12_mul_1_ref(h, f, g)
-        note("  f: {}".format(fhex(f)))
-        note("  g: {}".format(fhex(g)))
-        note("  h: {}".format(fhex(h)))
-        _, fx4 = make_fe12x4(f_limbs, lane)
-        _, gx4 = make_fe12x4(g_limbs, lane)
-        _, hx4 = make_fe12x4([], lane)
-        fe12_mul_1(hx4, fx4, gx4)
-        note("fx4: {}".format(fhex(list(fx4)[lane::4])))
-        note("gx4: {}".format(fhex(list(gx4)[lane::4])))
-        note("hx4: {}".format(fhex(list(hx4)[lane::4])))
-        self.assertEqual(fe12x4_val(hx4, lane), fe12_val(h))
+        self.do_test_mul(fe12_mul_1, fe12_mul_1_ref)(self, f_limbs, g_limbs, lane, swap)
+
+    @given(st_fe12_squeezed_0, st_fe12_squeezed_1, st.integers(0, 3), st.booleans())
+    def test_mul_2(self, f_limbs, g_limbs, lane, swap):
+        self.do_test_mul(fe12_mul_2, fe12_mul_2_ref)(self, f_limbs, g_limbs, lane, swap)
 
 
 def make_fe12(limbs=[]):

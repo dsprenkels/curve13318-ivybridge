@@ -4,8 +4,8 @@ CFLAGS +=   -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
 			-Wstrict-prototypes -fPIC -g -O2 -masm=intel -march=ivybridge
 
 H_SRCS :=   fe.h
-ASM_SCRS := fe12_mul_1.asm
-C_SRCS :=   fe12_mul_1_ref.c
+ASM_SCRS := fe12_mul_1.asm fe12_mul_2.asm
+C_SRCS :=   fe12_mul_1_ref.c fe12_mul_2_ref.c
 
 ASM_OBJS := $(ASM_SCRS:%.asm=%.o)
 C_OBJS :=   $(C_SRCS:%.c=%.o)
