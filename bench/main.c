@@ -5,7 +5,7 @@
 #include <string.h>
 
 #if !defined(ITERATIONS)
-# define ITERATIONS 100000
+# define ITERATIONS 1000000
 #endif
 
 // Noop function for calculating base measurement
@@ -24,8 +24,8 @@ unsigned int _bench_fns_n;
 int compare_uint64_ts(const void *ptrx, const void *ptry) {
     const uint64_t x = *(const uint64_t*)ptrx;
     const uint64_t y = *(const uint64_t*)ptry;
-    if (x < y) return 1;
-    if (x > y) return -1;
+    if (x < y) return -1;
+    if (x > y) return 1;
     return 0;
 }
 

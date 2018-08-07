@@ -70,6 +70,8 @@ scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte 
 
 fe12x4_squeeze = ref12.crypto_scalarmult_curve13318_ref12_fe12x4_squeeze
 fe12x4_squeeze.argtypes = [fe12x4_type]
+fe12x4_mul = ref12.crypto_scalarmult_curve13318_ref12_fe12x4_mul
+fe12x4_mul.argtypes = [fe12x4_type, fe12x4_type, fe12x4_type]
 
 
 # Custom testing strategies
@@ -194,6 +196,26 @@ class TestFE12x4(unittest.TestCase):
             assert abs(int(limb)) <= 2**(exponent-1), (i, hex(int(limb)), exponent)
         # Decode the value
         actual = sum(F(int(x)) for x in vz_c[lane::4])
+        self.assertEqual(actual, expected)
+
+    @given(st_fe12_squeezed_0, st_fe12_squeezed_1, st.integers(0,3), st.booleans())
+    def test_mul(self, f_limbs, g_limbs, lane, swap):
+        fhex = lambda x: [x.hex() for x in list(x)]
+
+        if swap:
+            f_limbs, g_limbs = g_limbs, f_limbs
+
+        f, f_c = make_fe12x4(f_limbs, lane)
+        g, g_c = make_fe12x4(g_limbs, lane)
+        _, h_c = make_fe12x4([], lane)
+        expected = f * g
+        fe12x4_mul(h_c, f_c, g_c)
+
+        note("f_c: {}".format(fhex(list(f_c)[lane::4])))
+        note("g_c: {}".format(fhex(list(g_c)[lane::4])))
+        note("h_c: {}".format(fhex(list(h_c)[lane::4])))
+
+        actual = F(fe12x4_val(h_c, lane))
         self.assertEqual(actual, expected)
 
 
