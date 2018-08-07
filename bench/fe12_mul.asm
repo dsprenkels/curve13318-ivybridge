@@ -2,11 +2,37 @@
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
 
+%include "bench.asm"
+
+section .rodata:
+
+_bench1_name: db `fe12_mul\0`
+_bench2_name: db `fe12_mul_gcc\0`
+
+align 8, db 0
+_bench_fns_arr:
+dq fe12_mul, fe12_mul_gcc
+
+_bench_names_arr:
+dq _bench1_name, _bench2_name
+
+_bench_fns: dq _bench_fns_arr
+_bench_names: dq _bench_names_arr
+_bench_fns_n: dd 2
+
+section .bss
+align 32
+scratch_space: resb 1536
+
 section .text
 
-global crypto_scalarmult_curve13318_ref12_fe12x4_mul
+global fe12_mul
 
-crypto_scalarmult_curve13318_ref12_fe12x4_mul:
+fe12_mul:
+    lea rdi, [rel scratch_space]
+    lea rsi, [rel scratch_space+384]
+    bench_prologue
+    lea rdx, [rel scratch_space+768]
     ; Multiply two field elements using subtractive karatsuba
     ;
     ; Input:  two vectorized field elements [rsi], [rdx]
@@ -16,6 +42,13 @@ crypto_scalarmult_curve13318_ref12_fe12x4_mul:
     ; Postcondition: TODO
     ;
     ; Stack layout:
+    ;   - [rsp] up to [rsp+192] contains Ax_shr
+    ;   - [rsp+192] up to [rsp+384] contains Bx_shr
+    ;   - [rsp+384] up to [rsp+576] contains mAx
+    ;   - [rsp+576] up to [rsp+768] contains mBx
+    ;   - [rsp+768] up to [rsp+1120] contains the `l` values
+    ;   - [rsp+1120] up to [rsp+1472] contains the `m` values
+    ;   - [rsp+1472] up to [rsp+1824] contains the `h` values
     %define A rsi
     %define B rdx
     %define C rdi
@@ -29,6 +62,12 @@ crypto_scalarmult_curve13318_ref12_fe12x4_mul:
     mov rbp, rsp
     and rsp, -32
     sub rsp, 640
+
+    ; notes:
+    ;             latency | throughput | ports
+    ;   - vmulpd:       5 |          1 |     0
+    ;   - vaddpd:       3 |          1 |     1
+    ;   - load:         4 |          1 |     2,3
 
     ; compute L
     ; ymm9 will store intermediate values, ymm10..ymm15 will store the accumulators
@@ -134,6 +173,8 @@ crypto_scalarmult_curve13318_ref12_fe12x4_mul:
     ;   - either 0, and so exponent part of the double is '0b00000000000'
     ;   - 0 modulo 2^149 and smaller than 2^237 => as such, the 7'th exponent bit is always set.
     ;     Thus we can use a mask operation for these values to divide them by 2*128.
+    ;
+    ; TODO(dsprenkels) Check if this optimisation actually helps.
     ;
     vmovapd ymm8, yword [rel .const_1_1p_neg128]
     vmovapd ymm9, yword [rel .const_unset_bit59_mask]
@@ -428,19 +469,11 @@ crypto_scalarmult_curve13318_ref12_fe12x4_mul:
     vmovapd yword [C+128], ymm14
     vmovapd yword [C+160], ymm15
 
-    %undef A
-    %undef B
-    %undef C
-    %undef A6_shr
-    %undef A11_shr
-    %undef l
-    %undef h
-
     ; restore stack frame
     mov rsp, rbp
     pop rbp
+    bench_epilogue
     ret
-
 
 section .rodata
 
@@ -449,3 +482,417 @@ align 32, db 0
 .const_1_1p_neg128: times 4 dq 0x1p-128
 .const_1_1p_128: times 4 dq 0x1p+128
 .const_38: times 4 dq 0x26p0
+
+section .text
+
+fe12_mul_gcc:
+  lea rdi, [rel scratch_space]
+  lea rsi, [rel scratch_space+384]
+  bench_prologue
+  lea rdx, [rel scratch_space+768]
+  push rbp
+  mov rbp, rsp
+  and rsp, -32
+  sub rsp, 1000
+  vmovapd ymm12, yword [rdx+32]
+  vmovapd ymm11, yword [rsi+32]
+  vmovapd ymm0, yword [rsi]
+  vmovapd yword [rsp+232], ymm12
+  vmovapd ymm6, yword [rdx]
+  vmovapd yword [rsp+72], ymm11
+  vmulpd ymm5, ymm12, ymm0
+  vmovapd ymm10, yword [rdx+64]
+  vmovapd yword [rsp+296], ymm0
+  vmovapd ymm7, ymm6
+  vmulpd ymm2, ymm6, ymm0
+  vmulpd ymm4, ymm11, ymm6
+  vaddpd ymm6, ymm4, ymm5
+  vmulpd ymm3, ymm10, ymm0
+  vmovapd ymm9, yword [rdx+96]
+  vmulpd ymm5, ymm11, ymm10
+  vmovapd yword [rsp+904], ymm2
+  vmovapd yword [rsp+264], ymm7
+  vmovapd ymm8, yword [rsi+64]
+  vmovapd ymm13, yword [rdx+128]
+  vmulpd ymm2, ymm9, ymm0
+  vmulpd ymm4, ymm11, ymm9
+  vaddpd ymm2, ymm5, ymm2
+  vmovapd yword [rsp+872], ymm6
+  vmulpd ymm6, ymm11, ymm12
+  vaddpd ymm6, ymm6, ymm3
+  vmovapd ymm14, yword [rdx+160]
+  vmulpd ymm1, ymm13, ymm0
+  vaddpd ymm4, ymm4, ymm1
+  vmulpd ymm1, ymm8, ymm7
+  vmulpd ymm3, ymm11, ymm13
+  vmulpd ymm0, ymm14, ymm0
+  vaddpd ymm3, ymm3, ymm0
+  vmulpd ymm5, ymm8, ymm12
+  vmulpd ymm0, ymm11, ymm14
+  vmovapd yword [rsp+168], ymm9
+  vaddpd ymm1, ymm1, ymm6
+  vmovapd ymm6, yword [rsi+96]
+  vmovapd yword [rsp+200], ymm10
+  vaddpd ymm5, ymm5, ymm2
+  vmulpd ymm2, ymm8, ymm9
+  vaddpd ymm3, ymm2, ymm3
+  vmulpd ymm2, ymm8, ymm13
+  vmovapd yword [rsp+40], ymm6
+  vmovapd yword [rsp+840], ymm1
+  vmulpd ymm1, ymm8, ymm10
+  vaddpd ymm1, ymm1, ymm4
+  vmulpd ymm4, ymm6, ymm7
+  vaddpd ymm2, ymm2, ymm0
+  vmulpd ymm0, ymm8, ymm14
+  vaddpd ymm5, ymm4, ymm5
+  vmulpd ymm4, ymm6, ymm12
+  vaddpd ymm4, ymm4, ymm1
+  vmulpd ymm1, ymm6, ymm10
+  vaddpd ymm3, ymm1, ymm3
+  vmulpd ymm1, ymm6, ymm9
+  vmovapd yword [rsp+808], ymm5
+  vaddpd ymm2, ymm1, ymm2
+  vmulpd ymm1, ymm6, ymm13
+  vaddpd ymm1, ymm1, ymm0
+  vmulpd ymm0, ymm6, ymm14
+  vmovapd ymm6, yword [rsi+128]
+  vmulpd ymm5, ymm6, ymm7
+  vaddpd ymm4, ymm5, ymm4
+  vmovapd ymm5, yword [rsi+160]
+  vmovapd ymm15, ymm5
+  vmulpd ymm5, ymm5, ymm7
+  vmovapd yword [rsp-24], ymm4
+  vmulpd ymm4, ymm6, ymm12
+  vaddpd ymm3, ymm4, ymm3
+  vmulpd ymm4, ymm6, ymm10
+  vaddpd ymm2, ymm4, ymm2
+  vmulpd ymm4, ymm6, ymm9
+  vmulpd ymm7, ymm15, ymm9
+  vmulpd ymm9, ymm15, ymm13
+  vaddpd ymm1, ymm4, ymm1
+  vmulpd ymm4, ymm6, ymm13
+  vaddpd ymm3, ymm5, ymm3
+  vmulpd ymm5, ymm15, ymm10
+  vaddpd ymm0, ymm4, ymm0
+  vmulpd ymm4, ymm6, ymm14
+  vmovapd yword [rsp-56], ymm3
+  vmulpd ymm3, ymm15, ymm12
+  vaddpd ymm2, ymm3, ymm2
+  vaddpd ymm3, ymm5, ymm1
+  vaddpd ymm5, ymm7, ymm0
+  vmovapd yword [rsp+776], ymm2
+  vaddpd ymm1, ymm9, ymm4
+  vmulpd ymm4, ymm15, ymm14
+  vmovapd yword [rsp+744], ymm3
+  vmovapd yword [rsp+712], ymm5
+  vmovapd yword [rsp+136], ymm13
+  vmovapd ymm5, yword [rel .LC0]
+  vmovapd ymm3, yword [rel .LC1]
+  vmovapd yword [rsp+8], ymm15
+  vandpd ymm9, ymm3, yword [rsi+224]
+  vandpd ymm7, ymm3, yword [rsi+288]
+  vmovapd yword [rsp+104], ymm14
+  vmovapd ymm0, yword [rel .LC0]
+  vmulpd ymm2, ymm0, yword [rdx+192]
+  vmulpd ymm15, ymm9, ymm2
+  vandpd ymm0, ymm3, yword [rdx+256]
+  vmovapd ymm13, yword [rel .LC0]
+  vmovapd yword [rsp+680], ymm1
+  vmulpd ymm1, ymm5, yword [rsi+192]
+  vmovapd ymm10, ymm1
+  vandpd ymm1, ymm3, yword [rsi+256]
+  vmovapd yword [rsp+968], ymm1
+  vandpd ymm1, ymm3, yword [rdx+224]
+  vmulpd ymm14, ymm1, ymm10
+  vaddpd ymm14, ymm15, ymm14
+  vmulpd ymm11, ymm0, ymm10
+  vmulpd ymm5, ymm5, yword [rsi+352]
+  vmulpd ymm15, ymm9, ymm0
+  vmovapd yword [rsp-88], ymm10
+  vmovapd yword [rsp+616], ymm5
+  vandpd ymm5, ymm3, yword [rdx+288]
+  vmulpd ymm12, ymm5, ymm10
+  vaddpd ymm12, ymm15, ymm12
+  vmovapd yword [rsp+552], ymm14
+  vmulpd ymm14, ymm9, ymm1
+  vaddpd ymm11, ymm14, ymm11
+  vmulpd ymm15, ymm2, yword [rsp+968]
+  vmovapd yword [rsp+648], ymm4
+  vmulpd ymm14, ymm9, ymm5
+  vandpd ymm4, ymm3, yword [rsi+320]
+  vandpd ymm3, ymm3, yword [rdx+320]
+  vmovapd yword [rsp+936], ymm4
+  vmulpd ymm4, ymm13, yword [rdx+352]
+  vmulpd ymm13, ymm2, ymm10
+  vmovapd yword [rsp+584], ymm13
+  vaddpd ymm11, ymm15, ymm11
+  vmulpd ymm13, ymm3, ymm10
+  vmulpd ymm10, ymm4, ymm10
+  vaddpd ymm14, ymm14, ymm13
+  vmulpd ymm13, ymm9, ymm3
+  vaddpd ymm13, ymm13, ymm10
+  vmulpd ymm10, ymm9, ymm4
+  vmovapd yword [rsp+520], ymm11
+  vmovapd ymm11, yword [rsp+968]
+  vmulpd ymm15, ymm1, ymm11
+  vaddpd ymm15, ymm15, ymm12
+  vmovapd ymm12, ymm11
+  vmulpd ymm11, ymm0, ymm11
+  vaddpd ymm11, ymm11, ymm14
+  vmovapd ymm14, ymm12
+  vmulpd ymm12, ymm5, ymm12
+  vaddpd ymm13, ymm12, ymm13
+  vmulpd ymm12, ymm3, ymm14
+  vaddpd ymm12, ymm12, ymm10
+  vmulpd ymm10, ymm4, ymm14
+  vmulpd ymm14, ymm7, ymm2
+  vaddpd ymm14, ymm14, ymm15
+  vmulpd ymm15, ymm2, yword [rsp+936]
+  vmovapd yword [rsp+488], ymm14
+  vmulpd ymm14, ymm7, ymm1
+  vaddpd ymm14, ymm14, ymm11
+  vmulpd ymm11, ymm7, ymm0
+  vaddpd ymm13, ymm11, ymm13
+  vmulpd ymm11, ymm7, ymm5
+  vaddpd ymm12, ymm11, ymm12
+  vmulpd ymm11, ymm7, ymm3
+  vaddpd ymm14, ymm15, ymm14
+  vaddpd ymm11, ymm11, ymm10
+  vmulpd ymm10, ymm7, ymm4
+  vmovapd yword [rsp+456], ymm14
+  vmovapd ymm15, yword [rsp+936]
+  vsubpd ymm8, ymm8, yword [rsp+968]
+  vsubpd ymm6, ymm6, yword [rsp+936]
+  vmulpd ymm14, ymm1, ymm15
+  vaddpd ymm13, ymm14, ymm13
+  vmulpd ymm14, ymm0, ymm15
+  vaddpd ymm12, ymm14, ymm12
+  vmulpd ymm14, ymm5, ymm15
+  vaddpd ymm11, ymm14, ymm11
+  vmulpd ymm14, ymm3, ymm15
+  vaddpd ymm10, ymm14, ymm10
+  vmulpd ymm14, ymm4, ymm15
+  vmulpd ymm15, ymm2, yword [rsp+616]
+  vaddpd ymm13, ymm15, ymm13
+  vmovapd ymm15, yword [rsp+616]
+  vsubpd ymm2, ymm2, yword [rsp+264]
+  vmovapd yword [rsp-120], ymm13
+  vmulpd ymm13, ymm1, ymm15
+  vaddpd ymm12, ymm13, ymm12
+  vmovapd ymm13, ymm15
+  vsubpd ymm1, ymm1, yword [rsp+232]
+  vmovapd yword [rsp+616], ymm12
+  vmulpd ymm12, ymm0, ymm15
+  vaddpd ymm12, ymm12, ymm11
+  vmulpd ymm11, ymm5, ymm15
+  vaddpd ymm15, ymm11, ymm10
+  vmovapd ymm11, yword [rsp+72]
+  vmulpd ymm10, ymm3, ymm13
+  vsubpd ymm0, ymm0, yword [rsp+200]
+  vmovapd yword [rsp+424], ymm12
+  vaddpd ymm12, ymm10, ymm14
+  vmovapd yword [rsp+392], ymm15
+  vsubpd ymm9, ymm11, ymm9
+  vmovapd ymm11, yword [rsp+40]
+  vmulpd ymm15, ymm4, ymm13
+  vmovapd yword [rsp+328], ymm15
+  vmovapd ymm15, yword [rsp+296]
+  vmovapd yword [rsp+360], ymm12
+  vsubpd ymm10, ymm15, yword [rsp-88]
+  vsubpd ymm7, ymm11, ymm7
+  vmovapd ymm11, yword [rsp+8]
+  vsubpd ymm12, ymm5, yword [rsp+168]
+  vsubpd ymm14, ymm11, ymm13
+  vmulpd ymm5, ymm10, ymm1
+  vmovapd ymm13, yword [rel .LC3]
+  vsubpd ymm11, ymm3, yword [rsp+136]
+  vmulpd ymm3, ymm10, ymm0
+  vmovapd yword [rsp+296], ymm3
+  vmulpd ymm3, ymm10, ymm2
+  vmovapd yword [rsp+936], ymm12
+  vsubpd ymm15, ymm4, yword [rsp+104]
+  vmulpd ymm4, ymm10, ymm12
+  vaddpd ymm3, ymm3, yword [rsp+904]
+  vmovapd yword [rsp+264], ymm4
+  vaddpd ymm3, ymm3, yword [rsp+584]
+  vmulpd ymm12, ymm10, ymm11
+  vmovapd yword [rsp+968], ymm11
+  vmovapd ymm4, yword [rel .LC2]
+  vmulpd ymm11, ymm10, ymm15
+  vmulpd ymm10, ymm13, yword [rsp+616]
+  vmulpd ymm3, ymm3, ymm4
+  vaddpd ymm3, ymm3, yword [rsp+776]
+  vaddpd ymm3, ymm3, ymm10
+  vmovapd yword [rdi+192], ymm3
+  vmulpd ymm3, ymm9, ymm1
+  vaddpd ymm3, ymm3, yword [rsp+296]
+  vmovapd yword [rsp+296], ymm3
+  vmulpd ymm3, ymm9, ymm0
+  vaddpd ymm10, ymm3, yword [rsp+264]
+  vmulpd ymm3, ymm9, yword [rsp+936]
+  vaddpd ymm12, ymm3, ymm12
+  vmulpd ymm3, ymm9, yword [rsp+968]
+  vaddpd ymm11, ymm3, ymm11
+  vmulpd ymm3, ymm9, ymm15
+  vmulpd ymm9, ymm9, ymm2
+  vaddpd ymm5, ymm9, ymm5
+  vmulpd ymm9, ymm13, yword [rsp+424]
+  vaddpd ymm5, ymm5, yword [rsp+872]
+  vaddpd ymm5, ymm5, yword [rsp+552]
+  vmulpd ymm5, ymm5, ymm4
+  vaddpd ymm5, ymm5, yword [rsp+744]
+  vaddpd ymm5, ymm5, ymm9
+  vmulpd ymm9, ymm13, yword [rsp+392]
+  vmovapd yword [rdi+224], ymm5
+  vmulpd ymm5, ymm8, ymm1
+  vaddpd ymm10, ymm5, ymm10
+  vmulpd ymm5, ymm8, ymm0
+  vaddpd ymm12, ymm5, ymm12
+  vmulpd ymm5, ymm8, yword [rsp+936]
+  vaddpd ymm11, ymm5, ymm11
+  vmulpd ymm5, ymm8, yword [rsp+968]
+  vaddpd ymm3, ymm5, ymm3
+  vmulpd ymm5, ymm8, ymm15
+  vmulpd ymm8, ymm8, ymm2
+  vaddpd ymm8, ymm8, yword [rsp+296]
+  vaddpd ymm8, ymm8, yword [rsp+840]
+  vaddpd ymm8, ymm8, yword [rsp+520]
+  vmulpd ymm8, ymm8, ymm4
+  vaddpd ymm8, ymm8, yword [rsp+712]
+  vaddpd ymm8, ymm8, ymm9
+  vmulpd ymm9, ymm13, yword [rsp+360]
+  vmovapd yword [rdi+256], ymm8
+  vmulpd ymm8, ymm7, ymm1
+  vaddpd ymm12, ymm8, ymm12
+  vmulpd ymm8, ymm7, ymm0
+  vaddpd ymm11, ymm8, ymm11
+  vmulpd ymm8, ymm7, yword [rsp+936]
+  vaddpd ymm3, ymm8, ymm3
+  vmulpd ymm8, ymm7, yword [rsp+968]
+  vaddpd ymm5, ymm8, ymm5
+  vmulpd ymm8, ymm7, ymm15
+  vmulpd ymm7, ymm7, ymm2
+  vaddpd ymm7, ymm7, ymm10
+  vmovapd ymm10, yword [rsp+936]
+  vaddpd ymm7, ymm7, yword [rsp+808]
+  vaddpd ymm7, ymm7, yword [rsp+488]
+  vmulpd ymm7, ymm7, ymm4
+  vaddpd ymm7, ymm7, yword [rsp+680]
+  vaddpd ymm7, ymm7, ymm9
+  vmulpd ymm9, ymm6, ymm15
+  vmovapd yword [rdi+288], ymm7
+  vmulpd ymm7, ymm6, ymm1
+  vaddpd ymm11, ymm7, ymm11
+  vmulpd ymm7, ymm6, ymm0
+  vaddpd ymm3, ymm7, ymm3
+  vmulpd ymm7, ymm6, ymm10
+  vmulpd ymm0, ymm14, ymm0
+  vmulpd ymm1, ymm14, ymm1
+  vaddpd ymm5, ymm7, ymm5
+  vmulpd ymm7, ymm6, yword [rsp+968]
+  vmulpd ymm6, ymm6, ymm2
+  vmulpd ymm2, ymm14, ymm2
+  vaddpd ymm6, ymm6, ymm12
+  vmovapd ymm12, yword [rsp-24]
+  vaddpd ymm8, ymm7, ymm8
+  vmulpd ymm7, ymm13, yword [rsp+328]
+  vaddpd ymm11, ymm2, ymm11
+  vaddpd ymm6, ymm6, ymm12
+  vaddpd ymm6, ymm6, yword [rsp+456]
+  vaddpd ymm5, ymm0, ymm5
+  vaddpd ymm3, ymm1, ymm3
+  vmulpd ymm6, ymm6, ymm4
+  vaddpd ymm6, ymm6, yword [rsp+648]
+  vaddpd ymm6, ymm6, ymm7
+  vmovapd yword [rdi+320], ymm6
+  vmovapd ymm7, yword [rsp-56]
+  vaddpd ymm5, ymm5, yword [rsp+744]
+  vaddpd ymm11, ymm11, ymm7
+  vmovapd ymm2, yword [rsp-120]
+  vaddpd ymm5, ymm5, yword [rsp+424]
+  vmulpd ymm5, ymm5, yword [rel .LC0]
+  vaddpd ymm5, ymm5, yword [rsp+552]
+  vaddpd ymm11, ymm11, ymm2
+  vaddpd ymm3, ymm3, yword [rsp+776]
+  vaddpd ymm1, ymm3, yword [rsp+616]
+  vmulpd ymm5, ymm5, ymm13
+  vmulpd ymm1, ymm1, yword [rel .LC0]
+  vaddpd ymm5, ymm5, yword [rsp+872]
+  vmulpd ymm4, ymm11, ymm4
+  vmovapd yword [rdi+352], ymm4
+  vmulpd ymm4, ymm14, ymm15
+  vaddpd ymm1, ymm1, yword [rsp+584]
+  vaddpd ymm4, ymm4, yword [rsp+648]
+  vaddpd ymm4, ymm4, yword [rsp+328]
+  vmovapd yword [rdi+32], ymm5
+  vmulpd ymm4, ymm4, yword [rel .LC0]
+  vmulpd ymm5, ymm14, ymm10
+  vaddpd ymm4, ymm4, yword [rsp+456]
+  vmulpd ymm1, ymm1, ymm13
+  vaddpd ymm8, ymm5, ymm8
+  vmulpd ymm5, ymm14, yword [rsp+968]
+  vaddpd ymm8, ymm8, yword [rsp+712]
+  vaddpd ymm5, ymm5, ymm9
+  vmulpd ymm4, ymm4, ymm13
+  vaddpd ymm8, ymm8, yword [rsp+392]
+  vmulpd ymm8, ymm8, yword [rel .LC0]
+  vaddpd ymm5, ymm5, yword [rsp+680]
+  vaddpd ymm6, ymm8, yword [rsp+520]
+  vaddpd ymm5, ymm5, yword [rsp+360]
+  vmulpd ymm5, ymm5, yword [rel .LC0]
+  vaddpd ymm5, ymm5, yword [rsp+488]
+  vaddpd ymm1, ymm1, yword [rsp+904]
+  vmulpd ymm6, ymm6, ymm13
+  vaddpd ymm4, ymm4, ymm12
+  vaddpd ymm6, ymm6, yword [rsp+840]
+  vmulpd ymm5, ymm5, ymm13
+  vmulpd ymm13, ymm13, ymm2
+  vaddpd ymm5, ymm5, yword [rsp+808]
+  vmovapd yword [rdi], ymm1
+  vaddpd ymm3, ymm13, ymm7
+  vmovapd yword [rdi+64], ymm6
+  vmovapd yword [rdi+96], ymm5
+  vmovapd yword [rdi+128], ymm4
+  vmovapd yword [rdi+160], ymm3
+  leave
+  bench_epilogue
+  ret
+section .rodata
+
+align 32, db 0
+.LC0:
+  dq 0
+  dq 938475520
+  dq 0
+  dq 938475520
+  dq 0
+  dq 938475520
+  dq 0
+  dq 938475520
+.LC1:
+  dq 4294967295
+  dq -134217729
+  dq 4294967295
+  dq -134217729
+  dq 4294967295
+  dq -134217729
+  dq 4294967295
+  dq -134217729
+.LC2:
+  dq 0
+  dq 1206910976
+  dq 0
+  dq 1206910976
+  dq 0
+  dq 1206910976
+  dq 0
+  dq 1206910976
+.LC3:
+  dq 0
+  dq 1078132736
+  dq 0
+  dq 1078132736
+  dq 0
+  dq 1078132736
+  dq 0
+  dq 1078132736

@@ -21,77 +21,73 @@ section .text:
 bench_squeeze1:
     bench_prologue
 
-    ; load short_precisionloss values
-    vbroadcastsd ymm12, qword [rel short_precisionloss0]
-    vbroadcastsd ymm13, qword [rel short_precisionloss6]
-
     ; round 1
+    vmovapd ymm12, yword [rel long_precisionloss0]
+    vmovapd ymm13, yword [rel long_precisionloss6]
     vaddpd ymm14, ymm0, ymm12
     vaddpd ymm15, ymm6, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vbroadcastsd ymm12, qword [rel short_precisionloss1]
-    vbroadcastsd ymm13, qword [rel short_precisionloss7]
     vaddpd ymm1, ymm1, ymm14
     vaddpd ymm7, ymm7, ymm15
     vsubpd ymm0, ymm0, ymm14
     vsubpd ymm6, ymm6, ymm15
 
     ; round 2
+    vmovapd ymm12, yword [rel long_precisionloss1]
+    vmovapd ymm13, yword [rel long_precisionloss7]
     vaddpd ymm14, ymm1, ymm12
     vaddpd ymm15, ymm7, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vbroadcastsd ymm12, qword [rel short_precisionloss2]
-    vbroadcastsd ymm13, qword [rel short_precisionloss8]
     vaddpd ymm2, ymm2, ymm14
     vaddpd ymm8, ymm8, ymm15
     vsubpd ymm1, ymm1, ymm14
     vsubpd ymm7, ymm7, ymm15
 
     ; round 3
+    vmovapd ymm12, yword [rel long_precisionloss2]
+    vmovapd ymm13, yword [rel long_precisionloss8]
     vaddpd ymm14, ymm2, ymm12
     vaddpd ymm15, ymm8, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vbroadcastsd ymm12, qword [rel short_precisionloss3]
-    vbroadcastsd ymm13, qword [rel short_precisionloss9]
     vaddpd ymm3, ymm3, ymm14
     vaddpd ymm9, ymm9, ymm15
     vsubpd ymm2, ymm2, ymm14
     vsubpd ymm8, ymm8, ymm15
 
     ; round 4
+    vmovapd ymm12, yword [rel long_precisionloss3]
+    vmovapd ymm13, yword [rel long_precisionloss9]
     vaddpd ymm14, ymm3, ymm12
     vaddpd ymm15, ymm9, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vbroadcastsd ymm12, qword [rel short_precisionloss4]
-    vbroadcastsd ymm13, qword [rel short_precisionloss10]
     vaddpd ymm4, ymm4, ymm14
     vaddpd ymm10, ymm10, ymm15
     vsubpd ymm3, ymm3, ymm14
     vsubpd ymm9, ymm9, ymm15
 
     ; round 5
+    vmovapd ymm12, yword [rel long_precisionloss4]
+    vmovapd ymm13, yword [rel long_precisionloss10]
     vaddpd ymm14, ymm4, ymm12
     vaddpd ymm15, ymm10, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vbroadcastsd ymm12, qword [rel short_precisionloss5]
-    vbroadcastsd ymm13, qword [rel short_precisionloss11]
     vaddpd ymm5, ymm5, ymm14
     vaddpd ymm11, ymm11, ymm15
     vsubpd ymm4, ymm4, ymm14
     vsubpd ymm10, ymm10, ymm15
 
     ; round 6
+    vmovapd ymm12, yword [rel long_precisionloss5]
+    vmovapd ymm13, yword [rel long_precisionloss11]
     vaddpd ymm14, ymm5, ymm12
     vaddpd ymm15, ymm11, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vbroadcastsd ymm12, qword [rel short_precisionloss6]
-    vbroadcastsd ymm13, qword [rel short_precisionloss0]
     vsubpd ymm5, ymm5, ymm14
     vsubpd ymm11, ymm11, ymm15
     vmulpd ymm15, ymm15, yword [rel long_reduceconstant]
@@ -99,18 +95,20 @@ bench_squeeze1:
     vaddpd ymm0, ymm0, ymm15
 
     ; round 7
+    vmovapd ymm12, yword [rel long_precisionloss6]
+    vmovapd ymm13, yword [rel long_precisionloss0]
     vaddpd ymm14, ymm6, ymm12
     vaddpd ymm15, ymm0, ymm13
     vsubpd ymm14, ymm14, ymm12
     vsubpd ymm15, ymm15, ymm13
-    vbroadcastsd ymm12, qword [rel short_precisionloss7]
-    vbroadcastsd ymm13, qword [rel short_precisionloss1]
     vaddpd ymm7, ymm7, ymm14
     vaddpd ymm1, ymm1, ymm15
     vsubpd ymm6, ymm6, ymm14
     vsubpd ymm0, ymm0, ymm15
 
     ; round 8
+    vmovapd ymm12, yword [rel long_precisionloss7]
+    vmovapd ymm13, yword [rel long_precisionloss1]
     vaddpd ymm14, ymm7, ymm12
     vaddpd ymm15, ymm1, ymm13
     vsubpd ymm14, ymm14, ymm12
@@ -228,16 +226,17 @@ short_precisionloss10: dq 0x3p285
 short_precisionloss11: dq 0x3p306
 short_reduceconstant: dq 0x13p-255
 
-long_precisionloss0: dq 0x3p73, 0x3p73, 0x3p73, 0x3p73
-long_precisionloss1: dq 0x3p94, 0x3p94, 0x3p94, 0x3p94
-long_precisionloss2: dq 0x3p115, 0x3p115, 0x3p115, 0x3p115
-long_precisionloss3: dq 0x3p136, 0x3p136, 0x3p136, 0x3p136
-long_precisionloss4: dq 0x3p158, 0x3p158, 0x3p158, 0x3p158
-long_precisionloss5: dq 0x3p179, 0x3p179, 0x3p179, 0x3p179
-long_precisionloss6: dq 0x3p200, 0x3p200, 0x3p200, 0x3p200
-long_precisionloss7: dq 0x3p221, 0x3p221, 0x3p221, 0x3p221
-long_precisionloss8: dq 0x3p243, 0x3p243, 0x3p243, 0x3p243
-long_precisionloss9: dq 0x3p264, 0x3p264, 0x3p264, 0x3p264
-long_precisionloss10: dq 0x3p285, 0x3p285, 0x3p285, 0x3p285
-long_precisionloss11: dq 0x3p306, 0x3p306, 0x3p306, 0x3p306
-long_reduceconstant: dq 0x13p-255, 0x13p-255, 0x13p-255, 0x13p-255
+align 32, db 0
+long_precisionloss0: times 4 dq 0x3p73
+long_precisionloss1: times 4 dq 0x3p94
+long_precisionloss2: times 4 dq 0x3p115
+long_precisionloss3: times 4 dq 0x3p136
+long_precisionloss4: times 4 dq 0x3p158
+long_precisionloss5: times 4 dq 0x3p179
+long_precisionloss6: times 4 dq 0x3p200
+long_precisionloss7: times 4 dq 0x3p221
+long_precisionloss8: times 4 dq 0x3p243
+long_precisionloss9: times 4 dq 0x3p264
+long_precisionloss10: times 4 dq 0x3p285
+long_precisionloss11: times 4 dq 0x3p306
+long_reduceconstant: times 4 dq 0x13p-255
