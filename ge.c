@@ -8,7 +8,7 @@ static bool ge_affine_point_on_curve(ge p)
     // y^2 = x^3 - 3*x + 13318
 
     // FIXME(dsprenkels) Something seems to go wrong with the squaring of y
-    // in this function. Don't know what exactly, maybe look at `fe10_square`?ck
+    // in this function. Don't know what exactly, maybe look at `fe10_square`?
     fe10 p0, p1, lhs, rhs, t0;
     fe10_frozen result;
     convert_fe12_to_fe10(p0, p[0]);
@@ -91,7 +91,7 @@ void ge_tobytes(uint8_t *s, ge p)
 
 void ge_add(ge p3, const ge p1, const ge p2)
 {
-    fe12 x1, y1, z1, x2, y2, z2, x3, y3, z3, t0, t1, t2, t3, t4, t5;
+    fe12 x1, y1, z1, x2, y2, z2, x3, y3, z3, t0, t1, t2, t3, t4;
     fe12_copy(x1, p1[0]);
     fe12_copy(y1, p1[1]);
     fe12_copy(z1, p1[2]);
@@ -115,67 +115,73 @@ void ge_add(ge p3, const ge p1, const ge p2)
     largest value, namely ±(11*19 + 1)*x*y = ±210*x*y for x the largest possible
     22-bit limbs. This means that the summed limb bits of the 2 multiplied
     operands cannot exceed ±0.98 * 2^53 / 210. Rounded down this computes to
-    ~±2^45.2. So if we restrict ourselves to a multiplied upper bound of
-    ±1.01*2^45, we should be all right.
+    ~±2^45.2 > ±1.1*2^45. So if we restrict ourselves to a multiplied upper bound
+    of ±1.1*2^45, we should be all right.
 
     We would manage this by multiplying 2^21 values with 2^24 values
     (because 21 + 24 ≤ 45), but for example 2^23 * 2^23 is *forbidden* as it
     may overflow (23 + 23 > 45).
     */
-    /*   #: Instruction number as mentioned in the paper */
-             // Assume forall x in {x1, z1, x2, z2} : |x| ≤ 1.01 * 2^21
-             //        forall x in {y1, y2} :         |x| ≤ 1.01 * 2^22
-             fe12_mul(t0, x1, x2); // |t0| ≤ 1.01 * 2^21
-             fe12_mul(t1, y1, y2); // |t1| ≤ 1.01 * 2^21
-             fe12_mul(t2, z1, z2); // |t2| ≤ 1.01 * 2^21
-             fe12_add(t3, x1, y1); // |t3| ≤ 1.01 * (2^22 + 2^21)
-    /*  5 */ fe12_add(t4, x2, y2); // |t4| ≤ 1.01 * (2^22 + 2^21)
-             fe12_copy(t5, t3); fe12_mul(t3, t5, t4); // |t3| ≤ 1.01 * 2^21
-             fe12_add(t4, t0, t1); // |t4| ≤ 1.01 * 2^22
-             fe12_sub(t3, t3, t4); // |t3| ≤ 1.01 * (2^22 + 2^21)
-             fe12_add(t4, y1, z1); // |t4| ≤ 1.01 * (2^22 + 2^21)
-    /* 10 */ fe12_add(x3, y2, z2); // |x3| ≤ 1.01 * (2^22 + 2^21)
-             fe12_copy(t5, t4); fe12_mul(t4, t5, x3); // |t4| ≤ 1.01 * 2^21
-             fe12_add(x3, t1, t2); // |x3| ≤ 1.01 * 2^22
-             fe12_sub(t4, t4, x3); // |t4| ≤ 1.01 * (2^22 + 2^21)
-             fe12_add(x3, x1, z1); // |x3| ≤ 1.01 * 2^22
-    /* 15 */ fe12_add(y3, x2, z2); // |y3| ≤ 1.01 * 2^22
-             fe12_copy(t5, x3); fe12_mul(x3, t5, y3); // |x3| ≤ 1.01 * 2^21
-             fe12_add(y3, t0, t2); // |y3| ≤ 1.01 * 2^22
-             fe12_sub(y3, x3, y3); // |y3| ≤ 1.01 * (2^22 + 2^21)
-             fe12_mul_b(z3, t2);   // |z3| ≤ 1.01 * 2^21
-    /* 20 */ fe12_sub(x3, y3, z3); // |x3| ≤ 1.01 * 2^23
-             fe12_add(z3, x3, x3); // |z3| ≤ 1.01 * 2^24
-             fe12_add(x3, x3, z3); // |x3| ≤ 1.01 * (2^24 + 2^23)
-             fe12_copy(t5, t1); fe12_sub(z3, t5, x3); // |z3| ≤ 1.01 * (2^24 + 2^23 + 2^21)
-             fe12_add(x3, t1, x3); // |x3| ≤ 1.01 * (2^24 + 2^23 + 2^21)
-    /* 25 */ fe12_mul_b(y3, y3);   // |y3| ≤ 1.01 * 2^21
-             fe12_add(t1, t2, t2); // |t1| ≤ 1.01 * 2^22
-             fe12_add(t2, t1, t2); // |t2| ≤ 1.01 * (2^22 + 2^21)
-             fe12_sub(y3, y3, t2); // |y3| ≤ 1.01 * 2^23
-             fe12_sub(y3, y3, t0); // |y3| ≤ 1.01 * (2^23 + 2^21)
-    /* 30 */ fe12_add(t1, y3, y3); // |t1| ≤ 1.01 * (2^24 + 2^22)
-             fe12_add(y3, t1, y3); // |y3| ≤ 1.01 * (2^24 + 2^23 + 2^22 + 2^21)
-             fe12_add(t1, t0, t0); // |t1| ≤ 1.01 * 2^22
-             fe12_add(t0, t1, t0); // |t0| ≤ 1.01 * (2^22 + 2^21)
-             fe12_sub(t0, t0, t2); // |t0| ≤ 1.01 * (2^23 + 2^22)
-    /* __ */ fe12_squeeze(x3);     // extra squeeze |x3| ≤ 1.01 * 2^21
-    /* __ */ fe12_squeeze(t0);     // extra squeeze |z3| ≤ 1.01 * 2^21
-    /* __ */ fe12_squeeze(z3);     // extra squeeze |z3| ≤ 1.01 * 2^21
-    /* __ */ fe12_squeeze(y3);     // extra squeeze |y3| ≤ 1.01 * 2^21
-    /* 35 */ fe12_mul(t1, t4, y3); // |t1| ≤ 1.01 * 2^21
-             fe12_mul(t2, t0, y3); // |t2| ≤ 1.01 * 2^21
-             fe12_mul(y3, x3, z3); // |y3| ≤ 1.01 * 2^21
-             fe12_add(y3, y3, t2); // |y3| ≤ 1.01 * 2^22
-             fe12_copy(t5, x3); fe12_mul(x3, t5, t3); // |x3| ≤ 1.01 * 2^21
-    /* 40 */ fe12_sub(x3, x3, t1); // |x3| ≤ 1.01 * 2^22
-             fe12_copy(t5, z3); fe12_mul(z3, t5, t4); // |z3| ≤ 1.01 * 2^21
-             fe12_mul(t1, t3, t0); // |t1| ≤ 1.01 * 2^21
-             fe12_add(z3, z3, t1); // |z3| ≤ 1.01 * 2^22
 
-    // Squeeze x3 and z3, otherwise we will get into trouble during the next
-    // Addition/doubling
+    /*   #: Instruction number as mentioned in the paper */
+              // Assume forall x in {x1, y1, z1, x2, y2, z2} : |x| ≤ 1.01 * 2^21
+              fe12_mul(t0, x1, x2); // |t0| ≤ 1.68 * 2^49
+              fe12_mul(t1, y1, y2); // |t1| ≤ 1.68 * 2^49
+              fe12_mul(t2, z1, z2); // |t2| ≤ 1.68 * 2^49
+              fe12_add(t3, x1, y1); // |t3| ≤ 1.01 * 2^22
+    /*  5 */  fe12_add(t4, x2, y2); // |t4| ≤ 1.01 * 2^22
+              fe12_mul(t3, t3, t4); // |t3| ≤ 1.68 * 2^51
+              fe12_add(t4, t0, t1); // |t4| ≤ 1.68 * 2^50
+              fe12_sub(t3, t3, t4); // |t3| ≤ 1.26 * 2^52
+              fe12_add(t4, y1, z1); // |t4| ≤ 1.01 * 2^22
+    /* 10 */  fe12_add(x3, y2, z2); // |x3| ≤ 1.01 * 2^22
+              fe12_mul(t4, t4, x3); // |t4| ≤ 1.01 * 2^23
+              fe12_add(x3, t1, t2); // |x3| ≤ 1.26 * 2^51
+              fe12_sub(t4, t4, x3); // |t4| ≤ 1.27 * 2^51
+              fe12_add(x3, x1, z1); // |x3| ≤ 1.01 * 2^22
+    /* 15 */  fe12_add(y3, x2, z2); // |y3| ≤ 1.01 * 2^22
+              fe12_mul(x3, x3, y3); // |x3| ≤ 1.68 * 2^51
+              fe12_add(y3, t0, t2); // |y3| ≤ 1.68 * 2^50
+              fe12_sub(y3, x3, y3); // |y3| ≤ 1.26 * 2^52
+    /* __ */  fe12_squeeze(y3);     // squeeze |y3| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(t0);     // squeeze |t1| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(t1);     // squeeze |t1| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(t2);     // squeeze |t2| ≤ 1.01 * 2^21
+              fe12_mul_b(z3, t2);   // |z3| ≤ 1.65 * 2^34
+    /* 20 */  fe12_sub(x3, y3, z3); // |x3| ≤ 1.66 * 2^34
+              fe12_add(z3, x3, x3); // |z3| ≤ 1.66 * 2^35
+              fe12_add(x3, x3, z3); // |x3| ≤ 1.25 * 2^36
+              fe12_sub(z3, t1, x3); // |z3| ≤ 1.26 * 36
+              fe12_add(x3, t1, x3); // |x3| ≤ 1.26 * 36
+    /* 25 */  fe12_mul_b(y3, y3);   // |y3| ≤ 1.65 * 2^34
+              fe12_add(t1, t2, t2); // |t1| ≤ 1.01 * 2^22
+              fe12_add(t2, t1, t2); // |t2| ≤ 1.52 * 2^22
+              fe12_sub(y3, y3, t2); // |y3| ≤ 1.66 * 2^34
+              fe12_sub(y3, y3, t0); // |y3| ≤ 1.67 * 2^34
+    /* 30 */  fe12_add(t1, y3, y3); // |t1| ≤ 1.67 * 2^35
+              fe12_add(y3, t1, y3); // |y3| ≤ 1.26 * 2^36
+              fe12_add(t1, t0, t0); // |t1| ≤ 1.01 * 2^22
+              fe12_add(t0, t1, t0); // |t0| ≤ 1.52 * 2^22
+              fe12_sub(t0, t0, t2); // |t0| ≤ 1.52 * 2^23
+    /* __ */  fe12_squeeze(t4);     // squeeze |t4| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(x3);     // squeeze |x3| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(y3);     // squeeze |y3| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(z3);     // squeeze |z3| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(t0);     // squeeze |z3| ≤ 1.01 * 2^21
+    /* 35 */  fe12_mul(t1, t4, y3); // |t1| ≤ 1.68 * 2^49
+              fe12_mul(t2, t0, y3); // |t2| ≤ 1.26 * 2^52
+              fe12_mul(y3, x3, z3); // |y3| ≤ 1.68 * 2^49
+    /* __ */  fe12_squeeze(t3);     // squeeze |t3| ≤ 1.01 * 2^21
+              fe12_add(y3, y3, t2); // |y3| ≤ 1.47 * 2^52
+              fe12_mul(x3, x3, t3); // |x3| ≤ 1.68 * 2^49
+    /* 40 */  fe12_sub(x3, x3, t1); // |x3| ≤ 1.68 * 2^50
+              fe12_mul(z3, z3, t4); // |z3| ≤ 1.68 * 2^49
+              fe12_mul(t1, t3, t0); // |t1| ≤ 1.68 * 2^49
+              fe12_add(z3, z3, t1); // |z3| ≤ 1.68 * 2^50
+
+    // Squeeze x3..z3 for next time
     fe12_squeeze(x3);
+    fe12_squeeze(y3);
     fe12_squeeze(z3);
 
     fe12_copy(p3[0], x3);
@@ -185,7 +191,7 @@ void ge_add(ge p3, const ge p1, const ge p2)
 
 void ge_double(ge p3, const ge p)
 {
-    fe12 x, y, z, x3, y3, z3, t0, t1, t2, t3, t5;
+    fe12 x, y, z, x3, y3, z3, t0, t1, t2, t3;
     fe12_copy(x, p[0]);
     fe12_copy(y, p[1]);
     fe12_copy(z, p[2]);
@@ -197,49 +203,56 @@ void ge_double(ge p3, const ge p)
     0.98 * 2^53 * 2^k.
     */
     /*   #: Instruction number as mentioned in the paper */
-             // Assume forall x in {x1, z1, x2, z2} : |x| ≤ 1.01 * 2^21
-             //        forall x in {y1, y2} :         |x| ≤ 1.01 * 2^22
-             fe12_square(t0, x);   // |t0| ≤ 1.01 * 2^21
-             fe12_square(t1, y);   // |t1| ≤ 1.01 * 2^21
-             fe12_square(t2, z);   // |t2| ≤ 1.01 * 2^21
-             fe12_mul(t3, x, y);   // |t3| ≤ 1.01 * 2^21
-    /*  5 */ fe12_add(t3, t3, t3); // |t3| ≤ 1.01 * 2^22
-             fe12_mul(z3, x, z);   // |z3| ≤ 1.01 * 2^21
-             fe12_add(z3, z3, z3); // |z3| ≤ 1.01 * 2^22
-             fe12_mul_b(y3, t2);   // |y3| ≤ 1.01 * 2^21
-             fe12_sub(y3, y3, z3); // |y3| ≤ 1.01 * (2^22 + 2^21)
-    /* 10 */ fe12_add(x3, y3, y3); // |x3| ≤ 1.01 * (2^23 + 2^22)
-             fe12_add(y3, x3, y3); // |y3| ≤ 1.01 * (2^24 + 2^21)
-             fe12_sub(x3, t1, y3); // |x3| ≤ 1.01 * (2^24 + 2^22)
-             fe12_add(y3, t1, y3); // |y3| ≤ 1.01 * (2^24 + 2^22)
-    /* __ */ fe12_squeeze(x3);     // extra squeeze |x3| ≤ 1.01 * 2^21
-    /* __ */ fe12_squeeze(y3);     // extra squeeze |y3| ≤ 1.01 * 2^21
-             fe12_copy(t5, y3); fe12_mul(y3, x3, t5); // |y3| ≤ 1.01 * 2^21
-    /* 15 */ fe12_copy(t5, x3); fe12_mul(x3, t5, t3); // |x3| ≤ 1.01 * 2^21
-             fe12_add(t3, t2, t2); // |t3| ≤ 1.01 * (2^22 + 2^21)
-             fe12_add(t2, t2, t3); // |t3| ≤ 1.01 * 2^23
-             fe12_mul_b(z3, z3);   // |z3| ≤ 1.01 * 2^21
-             fe12_sub(z3, z3, t2); // |z3| ≤ 1.01 * (2^23 + 2^21)
-    /* 20 */ fe12_sub(z3, z3, t0); // |z3| ≤ 1.01 * (2^23 + 2^22)
-             fe12_add(t3, z3, z3); // |t3| ≤ 1.01 * (2^24 + 2^23)
-             fe12_add(z3, z3, t3); // |z3| ≤ 1.01 * (2^25 + 2^22)
-             fe12_add(t3, t0, t0); // |t3| ≤ 1.01 * 2^22
-             fe12_add(t0, t3, t0); // |t0| ≤ 1.01 * (2^22 + 2^21)
-    /* 25 */ fe12_sub(t0, t0, t2); // |t0| ≤ 1.01 * (2^23 + 2^22 + 2^21)
-    /* __ */ fe12_squeeze(z3);     // extra squeeze |z3| ≤ 1.01 * 2^21
-             fe12_copy(t5, t0); fe12_mul(t0, t5, z3); // |t0| ≤ 1.01 * 2^21
-             fe12_add(y3, y3, t0); // |y3| ≤ 1.01 * 2^22
-             fe12_mul(t0, y, z);   // |t0| ≤ 1.01 * 2^21
-             fe12_add(t0, t0, t0); // |t0| ≤ 1.01 * 2^22
-    /* 30 */ fe12_copy(t5, z3); fe12_mul(z3, t0, t5); // |z3| ≤ 1.01 * 2^21
-             fe12_sub(x3, x3, z3); // |x3| ≤ 1.01 * 2^22
-             fe12_mul(z3, t0, t1); // |z3| ≤ 1.01 * 2^21
-             fe12_add(z3, z3, z3); // |z3| ≤ 1.01 * 2^22
-             fe12_add(z3, z3, z3); // |z3| ≤ 1.01 * 2^23
+              // Assume forall x in {x1, z1, y1, y2, x2, z2} : |x| ≤ 1.01 * 2^21
+              fe12_square(t0, x);   // |t0| ≤ 1.68 * 2^49
+              fe12_square(t1, y);   // |t1| ≤ 1.68 * 2^49
+              fe12_square(t2, z);   // |t2| ≤ 1.68 * 2^49
+              fe12_mul(t3, x, y);   // |t3| ≤ 1.68 * 2^49
+    /*  5 */  fe12_add(t3, t3, t3); // |t3| ≤ 1.68 * 2^50
+    /* __ */  fe12_squeeze(t2);     // squeeze |t2| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(t3);     // squeeze |t2| ≤ 1.01 * 2^21
+              fe12_mul(z3, x, z);   // |z3| ≤ 1.68 * 2^49
+              fe12_add(z3, z3, z3); // |z3| ≤ 1.68 * 2^50
+              fe12_mul_b(y3, t2);   // |y3| ≤ 1.65 * 2^34
+              fe12_sub(y3, y3, z3); // |y3| ≤ 1.69 * 2^50
+    /* 10 */  fe12_add(x3, y3, y3); // |x3| ≤ 1.69 * 2^51
+              fe12_add(y3, x3, y3); // |y3| ≤ 1.27 * 2^52
+              fe12_sub(x3, t1, y3); // |x3| ≤ 1.48 * 2^52
+              fe12_add(y3, t1, y3); // |y3| ≤ 1.48 * 2^52
+    /* __ */  fe12_squeeze(x3);     // squeeze |x3| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(y3);     // squeeze |y3| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(z3);     // squeeze |z3| ≤ 1.01 * 2^21
+              fe12_mul(y3, x3, y3); // |y3| ≤ 1.01 * 2^21
+    /* 15 */  fe12_mul(x3, x3, t3); // |x3| ≤ 1.01 * 2^21
+              fe12_add(t3, t2, t2); // |t3| ≤ 1.01 * 2^22
+              fe12_add(t2, t2, t3); // |t3| ≤ 1.52 * 2^22
+              fe12_mul_b(z3, z3);   // |z3| ≤ 1.65 * 2^34
+              fe12_sub(z3, z3, t2); // |z3| ≤ 1.66 * 2^34
+    /* 20 */  fe12_sub(z3, z3, t0); // |z3| ≤ 1.69 * 2^49
+              fe12_add(t3, z3, z3); // |t3| ≤ 1.69 * 2^50
+              fe12_add(z3, z3, t3); // |z3| ≤ 1.27 * 2^51
+              fe12_add(t3, t0, t0); // |t3| ≤ 1.68 * 2^50
+              fe12_add(t0, t3, t0); // |t0| ≤ 1.26 * 2^51
+    /* 25 */  fe12_sub(t0, t0, t2); // |t0| ≤ 1.27 * 2^51
+    /* __ */  fe12_squeeze(t0);     // squeeze |t0| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(z3);     // squeeze |z3| ≤ 1.01 * 2^21
+              fe12_mul(t0, t0, z3); // |t0| ≤ 1.68 * 2^49
+              fe12_add(y3, y3, t0); // |y3| ≤ 1.69 * 2^49
+              fe12_mul(t0, y, z);   // |t0| ≤ 1.68 * 2^49
+              fe12_add(t0, t0, t0); // |t0| ≤ 1.68 * 2^50
+    /* __ */  fe12_squeeze(t0);     // squeeze |t0| ≤ 1.01 * 2^21
+    /* 30 */  fe12_mul(z3, t0, z3); // |z3| ≤ 1.68 * 2^50
+              fe12_sub(x3, x3, z3); // |x3| ≤ 1.69 * 2^50
+    /* __ */  fe12_squeeze(t0);     // squeeze |t0| ≤ 1.01 * 2^21
+    /* __ */  fe12_squeeze(t1);     // squeeze |t1| ≤ 1.01 * 2^21
+              fe12_mul(z3, t0, t1); // |z3| ≤ 1.68 * 2^49
+              fe12_add(z3, z3, z3); // |z3| ≤ 1.68 * 2^50
+              fe12_add(z3, z3, z3); // |z3| ≤ 1.68 * 2^51
 
     // Squeeze x3 and z3, otherwise we will get into trouble during the next
     // Addition/doubling
     fe12_squeeze(x3);
+    fe12_squeeze(y3);
     fe12_squeeze(z3);
 
     fe12_copy(p3[0], x3);

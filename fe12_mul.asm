@@ -16,6 +16,7 @@ crypto_scalarmult_curve13318_ref12_fe12x4_mul:
     ; Postcondition: TODO
     ;
     ; Stack layout:
+    %push fe12_mul_ctx
     %define A rsi
     %define B rdx
     %define C rdi
@@ -428,13 +429,7 @@ crypto_scalarmult_curve13318_ref12_fe12x4_mul:
     vmovapd yword [C+128], ymm14
     vmovapd yword [C+160], ymm15
 
-    %undef A
-    %undef B
-    %undef C
-    %undef A6_shr
-    %undef A11_shr
-    %undef l
-    %undef h
+    %pop fe12_mul_ctx
 
     ; restore stack frame
     mov rsp, rbp
