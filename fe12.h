@@ -137,7 +137,6 @@ Multiply `f` by 13318 and store the result in `h`
 static inline void fe12_mul_b(fe12 h, fe12 f) {
     fe12_copy(h, f);
     fe12_mul_small(h, 13318);
-    fe12_squeeze(h);
 }
 
 #endif /* REF12_FE12_H_ */

@@ -12,7 +12,7 @@ P = 2**255 - 19
 F = FiniteField(P)
 E = EllipticCurve(F, [-3, 13318])
 
-from hypothesis import assume, example, given, note, seed, settings, strategies as st, unlimited
+from hypothesis import assume, example, given, HealthCheck, note, seed, settings, strategies as st, unlimited
 
 settings.register_profile("ci", settings(deadline=None,
                                          max_examples=10000,
@@ -440,6 +440,7 @@ class TestGE(unittest.TestCase):
     @example(0, 0, 1, 0, 0, 1)
     @example(0, 1, 1, 0, 0, 1)
     @example(0, 1, -1, 0, 0, 1)
+    @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_add_ref(self, x1, z1, sign1, x2, z2, sign2):
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
         (x2, y2, z2), point2 = make_ge(x2, z2, sign2)

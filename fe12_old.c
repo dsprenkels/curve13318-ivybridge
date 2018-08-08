@@ -298,11 +298,12 @@ void fe12_mul(fe12 C, const fe12 A, const fe12 B)
     C[ 9] =  l9 + 0x1p+128 * ( m3 + l3 + h3) + 0x26*h9;
     C[10] = l10 + 0x1p+128 * ( m4 + l4 + h4) + 0x26*h10;
     C[11] =       0x1p+128 * ( m5 + l5 + h5);
-    fe12_squeeze(C);
 }
 
-void fe12_mul_schoolbook(fe12 C, const fe12 A, const fe12 B)
+void fe12_mul_schoolbook(fe12 dest, const fe12 A, const fe12 B)
 {
+    fe12 C;
+
     // Precompute reduced B values
     const double  B1_19 = 0x13p-255 * B[ 1];
     const double  B2_19 = 0x13p-255 * B[ 2];
@@ -484,7 +485,7 @@ void fe12_mul_schoolbook(fe12 C, const fe12 A, const fe12 B)
     C[10] += A[11] * B11_19;
     C[11] += A[11] * B[ 0];
 
-    fe12_squeeze(C);
+    fe12_copy(dest, C);
 }
 
 void fe12_square(fe12 C, const fe12 A)
@@ -656,5 +657,4 @@ void fe12_square(fe12 C, const fe12 A)
     C[ 9] =  l9 +  0x1p+128 * ( -m3 +  l3 +  h3) + 0x26*h9;
     C[10] = l10 +  0x1p+128 * ( -m4 +  l4 +  h4) + 0x26*h10;
     C[11] =        0x1p+128 * ( -m5 +  l5 +  h5);
-    fe12_squeeze(C);
 }
