@@ -10,10 +10,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define select crypto_scalarmult_curve13318_ref12_select
-#define do_precomputation crypto_scalarmult_curve13318_ref12_do_precomputation
-#define ladderstep crypto_scalarmult_curve13318_ref12_ladderstep
-#define ladder crypto_scalarmult_curve13318_ref12_ladder
 #define scalarmult crypto_scalarmult_curve13318_scalarmult
 
 static inline void cmov(ge dest, const ge src, bool c)
@@ -25,12 +21,12 @@ static inline void cmov(ge dest, const ge src, bool c)
     }
 }
 
-void select(ge dest, uint8_t idx, const ge ptable[16])
+static void select(ge dest, uint8_t idx, const ge ptable[16])
 {
     for (unsigned int i = 0; i < 16; i++) cmov(dest, ptable[i], i == idx);
 }
 
-void do_precomputation(ge ptable[16], const ge p)
+static void do_precomputation(ge ptable[16], const ge p)
 {
     ge_copy(ptable[0], p);
     ge_double(ptable[1], ptable[0]);
@@ -50,36 +46,8 @@ void do_precomputation(ge ptable[16], const ge p)
     ge_double(ptable[15], ptable[7]);
 }
 
-void ladderstep(ge q, ge ptable[16], uint8_t bits)
+static void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t *e)
 {
-    ge p;
-    // Our lookup table is one-based indexed. The neutral element is not stored
-    // in `ptable`, but written by `ge_zero`. The mapping from `bits` to `idx`
-    // is defined by the following:
-    //
-    // compute_idx :: Word8 -> Word8
-    // compute_idx bits
-    //   |  0 <= bits < 16 = x - 1  // sign is (+)
-    //   | 16 <= bits < 32 = ~x     // sign is (-)
-    const uint8_t sign = (bits >> 4) & 0x01;
-    const uint8_t signmask = -(int8_t)sign;
-    const uint8_t idx = ((~bits & signmask) | ((bits - 1) & ~signmask)) & 0x1F;
-
-    for (int i = 0; i < 5; i++) ge_double(q, q);
-    ge_zero(p);
-    select(p, idx, ptable);
-    ge_cneg(p, sign);
-    ge_add(q, q, p);
-
-}
-
-void ladder(const uint8_t *e, ge q, const ge p)
-{
-    ge ptable[16];
-    uint8_t w[51], zeroth_window;
-
-    do_precomputation(ptable, p);
-
     // Decode the key bytes into windows and ripple the subtraction carry
     w[50] = e[ 0] & 0x1F;
     w[49] = ((e[ 1] << 3) | (e[ 0] >> 5)) & 0x1F;
@@ -182,7 +150,39 @@ void ladder(const uint8_t *e, ge q, const ge p)
     w[ 1] += ((w[ 2] >> 5) ^ (w[ 2] >> 4)) & 0x1;
     w[ 0] = (e[31] >> 2) & 0x1F;
     w[ 0] += ((w[ 1] >> 5) ^ (w[ 1] >> 4)) & 0x1;
-    zeroth_window = ((w[0] >> 5) ^ (w[0] >> 4)) & 0x1;
+    *zeroth_window = ((w[0] >> 5) ^ (w[0] >> 4)) & 0x1;
+}
+
+static void ladderstep(ge q, ge ptable[16], uint8_t bits)
+{
+    ge p;
+    // Our lookup table is one-based indexed. The neutral element is not stored
+    // in `ptable`, but written by `ge_zero`. The mapping from `bits` to `idx`
+    // is defined by the following:
+    //
+    // compute_idx :: Word8 -> Word8
+    // compute_idx bits
+    //   |  0 <= bits < 16 = x - 1  // sign is (+)
+    //   | 16 <= bits < 32 = ~x     // sign is (-)
+    const uint8_t sign = (bits >> 4) & 0x01;
+    const uint8_t signmask = -(int8_t)sign;
+    const uint8_t idx = ((~bits & signmask) | ((bits - 1) & ~signmask)) & 0x1F;
+
+    for (int i = 0; i < 5; i++) ge_double(q, q);
+    ge_zero(p);
+    select(p, idx, ptable);
+    ge_cneg(p, sign);
+    ge_add(q, q, p);
+
+}
+
+static void ladder(const uint8_t *key, ge q, const ge p)
+{
+    ge ptable[16];
+    uint8_t w[51], zeroth_window;
+
+    do_precomputation(ptable, p);
+    compute_windows(w, &zeroth_window, key);
 
     // Do double and add scalar multiplication
     ge_zero(q);
