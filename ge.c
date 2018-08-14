@@ -189,7 +189,7 @@ void ge_add(ge p3, const ge p1, const ge p2)
     fe12_copy(p3[2], z3);
 }
 
-void ge_double(ge p3, const ge p)
+void ge_double_c(ge p3, const ge p)
 {
     fe12 x, y, z, x3, y3, z3, t0, t1, t2, t3;
     fe12_copy(x, p[0]);

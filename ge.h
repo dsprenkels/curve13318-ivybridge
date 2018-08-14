@@ -20,6 +20,7 @@ typedef fe12 ge[3];
 #define ge_tobytes crypto_scalarmult_curve13318_ref12_ge_tobytes
 #define ge_add crypto_scalarmult_curve13318_ref12_ge_add
 #define ge_double crypto_scalarmult_curve13318_ref12_ge_double
+#define ge_double_c crypto_scalarmult_curve13318_ref12_ge_double_c
 
 /*
 Write the neutral element (0 : 1 : 0) to point
