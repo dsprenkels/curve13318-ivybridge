@@ -8,17 +8,18 @@ section .rodata:
 
 _bench1_name: db `fe12_mul\0`
 _bench2_name: db `fe12_mul_gcc\0`
+_bench3_name: db `fe12_mul_clang\0`
 
 align 8, db 0
 _bench_fns_arr:
-dq fe12_mul, fe12_mul_gcc
+dq fe12_mul, fe12_mul_gcc, fe12_mul_clang
 
 _bench_names_arr:
-dq _bench1_name, _bench2_name
+dq _bench1_name, _bench2_name, _bench3_name
 
 _bench_fns: dq _bench_fns_arr
 _bench_names: dq _bench_names_arr
-_bench_fns_n: dd 2
+_bench_fns_n: dd 3
 
 section .bss
 align 32
@@ -857,6 +858,7 @@ fe12_mul_gcc:
   leave
   bench_epilogue
   ret
+
 section .rodata
 
 align 32, db 0
@@ -896,3 +898,414 @@ align 32, db 0
   dq 1078132736
   dq 0
   dq 1078132736
+
+
+section .text
+
+fe12_mul_clang: ; @fe12_mul
+    lea rdi, [rel scratch_space]
+    lea rsi, [rel scratch_space+384]
+    bench_prologue
+    lea rdx, [rel scratch_space+768]
+    sub rsp, 888
+    vmovapd ymm9, yword [rdx]
+    vmovapd ymm1, yword [rdx + 32]
+    vmovapd ymm7, yword [rdx + 64]
+    vmovapd ymm8, yword [rdx + 96]
+    vmovapd ymm6, yword [rsi]
+    vmovupd yword [rsp], ymm6 ; 32-byte Spill
+    vmovapd ymm12, yword [rsi + 32]
+    vmovapd ymm13, yword [rsi + 64]
+    vmulpd ymm0, ymm6, ymm1
+    vmulpd ymm2, ymm6, ymm7
+    vmulpd ymm3, ymm6, ymm8
+    vmovapd ymm5, yword [rdx + 128]
+    vmulpd ymm4, ymm6, ymm5
+    vmovapd ymm11, ymm5
+    vmovapd ymm10, yword [rdx + 160]
+    vmulpd ymm5, ymm6, ymm10
+    vmovapd ymm14, ymm10
+    vmovupd yword [rsp - 32], ymm12 ; 32-byte Spill
+    vmulpd ymm6, ymm9, ymm12
+    vaddpd ymm0, ymm0, ymm6
+    vmovupd yword [rsp + 832], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm1, ymm12
+    vaddpd ymm0, ymm2, ymm0
+    vmulpd ymm2, ymm7, ymm12
+    vaddpd ymm2, ymm3, ymm2
+    vmulpd ymm3, ymm8, ymm12
+    vaddpd ymm3, ymm4, ymm3
+    vmulpd ymm4, ymm11, ymm12
+    vaddpd ymm4, ymm5, ymm4
+    vmulpd ymm5, ymm10, ymm12
+    vmulpd ymm6, ymm9, ymm13
+    vaddpd ymm0, ymm0, ymm6
+    vmovupd yword [rsp + 800], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm1, ymm13
+    vaddpd ymm0, ymm2, ymm0
+    vmulpd ymm2, ymm7, ymm13
+    vaddpd ymm2, ymm3, ymm2
+    vmulpd ymm3, ymm8, ymm13
+    vaddpd ymm3, ymm4, ymm3
+    vmulpd ymm4, ymm11, ymm13
+    vmovupd yword [rsp + 160], ymm13 ; 32-byte Spill
+    vaddpd ymm4, ymm5, ymm4
+    vmovapd ymm6, yword [rsi + 96]
+    vmulpd ymm5, ymm9, ymm6
+    vaddpd ymm0, ymm0, ymm5
+    vmovupd yword [rsp + 768], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm1, ymm6
+    vaddpd ymm0, ymm2, ymm0
+    vmulpd ymm2, ymm7, ymm6
+    vaddpd ymm2, ymm3, ymm2
+    vmulpd ymm3, ymm8, ymm6
+    vmovapd ymm10, ymm8
+    vaddpd ymm3, ymm4, ymm3
+    vmulpd ymm4, ymm14, ymm13
+    vmulpd ymm5, ymm11, ymm6
+    vmovapd ymm12, ymm6
+    vmovupd yword [rsp - 64], ymm6 ; 32-byte Spill
+    vaddpd ymm4, ymm4, ymm5
+    vmovapd ymm8, yword [rsi + 128]
+    vmovupd yword [rsp + 96], ymm9 ; 32-byte Spill
+    vmulpd ymm5, ymm9, ymm8
+    vaddpd ymm0, ymm0, ymm5
+    vmovupd yword [rsp + 736], ymm0 ; 32-byte Spill
+    vmovupd yword [rsp + 128], ymm1 ; 32-byte Spill
+    vmulpd ymm0, ymm1, ymm8
+    vaddpd ymm0, ymm2, ymm0
+    vmovupd yword [rsp + 64], ymm7 ; 32-byte Spill
+    vmulpd ymm2, ymm7, ymm8
+    vaddpd ymm2, ymm3, ymm2
+    vmovapd ymm6, ymm10
+    vmovupd yword [rsp + 512], ymm10 ; 32-byte Spill
+    vmulpd ymm3, ymm10, ymm8
+    vaddpd ymm3, ymm4, ymm3
+    vmulpd ymm4, ymm14, ymm12
+    vmovupd yword [rsp + 480], ymm14 ; 32-byte Spill
+    vmulpd ymm5, ymm11, ymm8
+    vmovupd yword [rsp + 448], ymm11 ; 32-byte Spill
+    vaddpd ymm4, ymm4, ymm5
+    vmovapd ymm10, yword [rsi + 160]
+    vmulpd ymm5, ymm9, ymm10
+    vaddpd ymm0, ymm0, ymm5
+    vmovupd yword [rsp + 704], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm1, ymm10
+    vaddpd ymm0, ymm2, ymm0
+    vmovupd yword [rsp + 288], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm7, ymm10
+    vaddpd ymm0, ymm3, ymm0
+    vmovupd yword [rsp + 672], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm6, ymm10
+    vmovupd yword [rsp + 416], ymm10 ; 32-byte Spill
+    vaddpd ymm0, ymm4, ymm0
+    vmovupd yword [rsp + 320], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm14, ymm8
+    vmovapd ymm1, yword [rel .LCPI0_0] ; ymm1 = [2.938736e-39,2.938736e-39,2.938736e-39,2.938736e-39]
+    vmulpd ymm9, ymm1, yword [rsi + 192]
+    vmulpd ymm2, ymm11, ymm10
+    vmovapd ymm11, yword [rel .LCPI0_1] ; ymm11 = [17870283321406128127,17870283321406128127,17870283321406128127,17870283321406128127]
+    vandpd ymm15, ymm11, yword [rsi + 224]
+    vmulpd ymm10, ymm1, yword [rdx + 192]
+    vmovapd ymm7, ymm1
+    vandpd ymm12, ymm11, yword [rdx + 224]
+    vaddpd ymm0, ymm0, ymm2
+    vmovupd yword [rsp + 256], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm9, ymm12
+    vmulpd ymm2, ymm10, ymm15
+    vaddpd ymm0, ymm2, ymm0
+    vmovupd yword [rsp + 640], ymm0 ; 32-byte Spill
+    vandpd ymm6, ymm11, yword [rdx + 256]
+    vmulpd ymm0, ymm9, ymm6
+    vmulpd ymm2, ymm15, ymm12
+    vaddpd ymm0, ymm2, ymm0
+    vmovupd yword [rsp - 128], ymm0 ; 32-byte Spill
+    vandpd ymm5, ymm11, yword [rdx + 288]
+    vmulpd ymm2, ymm9, ymm5
+    vmulpd ymm4, ymm15, ymm6
+    vaddpd ymm1, ymm4, ymm2
+    vandpd ymm3, ymm11, yword [rdx + 320]
+    vmulpd ymm4, ymm7, yword [rdx + 352]
+    vmulpd ymm7, ymm9, ymm3
+    vmulpd ymm14, ymm15, ymm5
+    vaddpd ymm14, ymm14, ymm7
+    vmulpd ymm7, ymm9, ymm4
+    vmulpd ymm13, ymm15, ymm3
+    vaddpd ymm13, ymm7, ymm13
+    vandpd ymm7, ymm11, yword [rsi + 256]
+    vmulpd ymm0, ymm10, ymm7
+    vaddpd ymm0, ymm0, yword [rsp - 128] ; 32-byte Folded Reload
+    vmovupd yword [rsp + 608], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm7, ymm12
+    vaddpd ymm0, ymm0, ymm1
+    vmovupd yword [rsp - 128], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm7, ymm6
+    vaddpd ymm14, ymm0, ymm14
+    vmulpd ymm0, ymm7, ymm5
+    vaddpd ymm13, ymm0, ymm13
+    vmulpd ymm0, ymm4, ymm15
+    vmulpd ymm1, ymm7, ymm3
+    vaddpd ymm0, ymm0, ymm1
+    vmovupd yword [rsp - 96], ymm0 ; 32-byte Spill
+    vandpd ymm2, ymm11, yword [rsi + 288]
+    vmulpd ymm1, ymm10, ymm2
+    vaddpd ymm0, ymm1, yword [rsp - 128] ; 32-byte Folded Reload
+    vmovupd yword [rsp + 576], ymm0 ; 32-byte Spill
+    vmulpd ymm1, ymm2, ymm12
+    vaddpd ymm0, ymm1, ymm14
+    vmulpd ymm14, ymm2, ymm6
+    vaddpd ymm1, ymm14, ymm13
+    vmovupd yword [rsp - 128], ymm1 ; 32-byte Spill
+    vmulpd ymm14, ymm2, ymm5
+    vaddpd ymm14, ymm14, yword [rsp - 96] ; 32-byte Folded Reload
+    vmulpd ymm1, ymm4, ymm7
+    vmulpd ymm13, ymm2, ymm3
+    vaddpd ymm1, ymm1, ymm13
+    vmovupd yword [rsp - 96], ymm1 ; 32-byte Spill
+    vandpd ymm11, ymm11, yword [rsi + 320]
+    vmulpd ymm13, ymm10, ymm11
+    vaddpd ymm0, ymm13, ymm0
+    vmovupd yword [rsp + 544], ymm0 ; 32-byte Spill
+    vmulpd ymm13, ymm11, ymm12
+    vaddpd ymm0, ymm13, yword [rsp - 128] ; 32-byte Folded Reload
+    vmovupd yword [rsp - 128], ymm0 ; 32-byte Spill
+    vmulpd ymm1, ymm11, ymm6
+    vaddpd ymm0, ymm1, ymm14
+    vmovupd yword [rsp + 32], ymm0 ; 32-byte Spill
+    vmulpd ymm14, ymm11, ymm5
+    vaddpd ymm14, ymm14, yword [rsp - 96] ; 32-byte Folded Reload
+    vmovapd ymm0, yword [rel .LCPI0_0] ; ymm0 = [2.938736e-39,2.938736e-39,2.938736e-39,2.938736e-39]
+    vmulpd ymm0, ymm0, yword [rsi + 352]
+    vmulpd ymm1, ymm4, ymm2
+    vmulpd ymm13, ymm11, ymm3
+    vaddpd ymm1, ymm1, ymm13
+    vmulpd ymm13, ymm0, ymm10
+    vaddpd ymm13, ymm13, yword [rsp - 128] ; 32-byte Folded Reload
+    vmovupd yword [rsp - 128], ymm13 ; 32-byte Spill
+    vmulpd ymm13, ymm0, ymm12
+    vaddpd ymm13, ymm13, yword [rsp + 32] ; 32-byte Folded Reload
+    vmovupd yword [rsp + 192], ymm13 ; 32-byte Spill
+    vmulpd ymm13, ymm0, ymm6
+    vaddpd ymm13, ymm13, ymm14
+    vmovupd yword [rsp + 224], ymm13 ; 32-byte Spill
+    vmulpd ymm13, ymm0, ymm5
+    vaddpd ymm1, ymm13, ymm1
+    vmovupd yword [rsp + 32], ymm1 ; 32-byte Spill
+    vmulpd ymm1, ymm4, ymm11
+    vmulpd ymm13, ymm0, ymm3
+    vaddpd ymm1, ymm1, ymm13
+    vmovupd yword [rsp - 96], ymm1 ; 32-byte Spill
+    vmovupd ymm1, yword [rsp - 32] ; 32-byte Reload
+    vsubpd ymm1, ymm1, ymm15
+    vmovupd ymm13, yword [rsp + 160] ; 32-byte Reload
+    vsubpd ymm14, ymm13, ymm7
+    vmovupd ymm7, yword [rsp - 64] ; 32-byte Reload
+    vsubpd ymm7, ymm7, ymm2
+    vsubpd ymm11, ymm8, ymm11
+    vmovupd ymm2, yword [rsp + 96] ; 32-byte Reload
+    vmovupd ymm8, yword [rsp] ; 32-byte Reload
+    vmulpd ymm13, ymm8, ymm2
+    vmovupd yword [rsp + 384], ymm13 ; 32-byte Spill
+    vsubpd ymm8, ymm8, ymm9
+    vmulpd ymm9, ymm9, ymm10
+    vmovupd yword [rsp + 352], ymm9 ; 32-byte Spill
+    vsubpd ymm15, ymm10, ymm2
+    vsubpd ymm12, ymm12, yword [rsp + 128] ; 32-byte Folded Reload
+    vsubpd ymm6, ymm6, yword [rsp + 64] ; 32-byte Folded Reload
+    vsubpd ymm5, ymm5, yword [rsp + 512] ; 32-byte Folded Reload
+    vsubpd ymm2, ymm3, yword [rsp + 448] ; 32-byte Folded Reload
+    vmovupd ymm3, yword [rsp + 480] ; 32-byte Reload
+    vmovupd ymm10, yword [rsp + 416] ; 32-byte Reload
+    vmulpd ymm9, ymm3, ymm10
+    vmovupd yword [rsp], ymm9 ; 32-byte Spill
+    vsubpd ymm9, ymm10, ymm0
+    vmulpd ymm0, ymm0, ymm4
+    vmovupd yword [rsp - 32], ymm0 ; 32-byte Spill
+    vsubpd ymm4, ymm4, ymm3
+    vmulpd ymm0, ymm8, ymm12
+    vmulpd ymm10, ymm1, ymm15
+    vaddpd ymm0, ymm10, ymm0
+    vmovupd yword [rsp + 160], ymm0 ; 32-byte Spill
+    vmulpd ymm0, ymm8, ymm6
+    vmulpd ymm10, ymm1, ymm12
+    vaddpd ymm0, ymm10, ymm0
+    vmovupd yword [rsp - 64], ymm0 ; 32-byte Spill
+    vmulpd ymm10, ymm8, ymm5
+    vmulpd ymm3, ymm1, ymm6
+    vaddpd ymm3, ymm3, ymm10
+    vmulpd ymm10, ymm8, ymm2
+    vmulpd ymm13, ymm1, ymm5
+    vaddpd ymm10, ymm13, ymm10
+    vmulpd ymm13, ymm8, ymm4
+    vmulpd ymm0, ymm1, ymm2
+    vaddpd ymm0, ymm13, ymm0
+    vmulpd ymm13, ymm14, ymm15
+    vaddpd ymm13, ymm13, yword [rsp - 64] ; 32-byte Folded Reload
+    vmovupd yword [rsp - 64], ymm13 ; 32-byte Spill
+    vmulpd ymm13, ymm14, ymm12
+    vaddpd ymm3, ymm13, ymm3
+    vmulpd ymm13, ymm14, ymm6
+    vaddpd ymm10, ymm13, ymm10
+    vmulpd ymm13, ymm14, ymm5
+    vaddpd ymm0, ymm13, ymm0
+    vmulpd ymm1, ymm1, ymm4
+    vmulpd ymm13, ymm14, ymm2
+    vaddpd ymm1, ymm1, ymm13
+    vmulpd ymm13, ymm7, ymm15
+    vaddpd ymm3, ymm13, ymm3
+    vmovupd yword [rsp + 128], ymm3 ; 32-byte Spill
+    vmulpd ymm3, ymm7, ymm12
+    vaddpd ymm3, ymm3, ymm10
+    vmulpd ymm10, ymm7, ymm6
+    vaddpd ymm0, ymm10, ymm0
+    vmulpd ymm10, ymm7, ymm5
+    vaddpd ymm1, ymm10, ymm1
+    vmulpd ymm10, ymm14, ymm4
+    vmulpd ymm13, ymm7, ymm2
+    vaddpd ymm10, ymm10, ymm13
+    vmulpd ymm13, ymm11, ymm15
+    vaddpd ymm3, ymm13, ymm3
+    vmovupd yword [rsp + 96], ymm3 ; 32-byte Spill
+    vmulpd ymm3, ymm11, ymm12
+    vaddpd ymm0, ymm3, ymm0
+    vmulpd ymm3, ymm11, ymm6
+    vaddpd ymm3, ymm3, ymm1
+    vmulpd ymm1, ymm11, ymm5
+    vaddpd ymm10, ymm1, ymm10
+    vmulpd ymm1, ymm7, ymm4
+    vmulpd ymm7, ymm11, ymm2
+    vaddpd ymm7, ymm1, ymm7
+    vmulpd ymm1, ymm8, ymm15
+    vmulpd ymm8, ymm9, ymm15
+    vaddpd ymm0, ymm8, ymm0
+    vmovupd yword [rsp + 64], ymm0 ; 32-byte Spill
+    vmulpd ymm8, ymm9, ymm12
+    vaddpd ymm3, ymm8, ymm3
+    vmulpd ymm6, ymm9, ymm6
+    vaddpd ymm6, ymm6, ymm10
+    vmulpd ymm5, ymm9, ymm5
+    vaddpd ymm5, ymm5, ymm7
+    vmulpd ymm7, ymm11, ymm4
+    vmulpd ymm2, ymm9, ymm2
+    vaddpd ymm2, ymm7, ymm2
+    vmulpd ymm4, ymm9, ymm4
+    vaddpd ymm3, ymm3, yword [rsp + 288] ; 32-byte Folded Reload
+    vaddpd ymm3, ymm3, yword [rsp + 192] ; 32-byte Folded Reload
+    vmovapd ymm7, yword [rel .LCPI0_0] ; ymm7 = [2.938736e-39,2.938736e-39,2.938736e-39,2.938736e-39]
+    vmulpd ymm3, ymm3, ymm7
+    vmovupd ymm12, yword [rsp + 352] ; 32-byte Reload
+    vaddpd ymm3, ymm12, ymm3
+    vmovapd ymm9, yword [rel .LCPI0_2] ; ymm9 = [3.800000e+01,3.800000e+01,3.800000e+01,3.800000e+01]
+    vmulpd ymm3, ymm3, ymm9
+    vmovupd ymm0, yword [rsp + 384] ; 32-byte Reload
+    vaddpd ymm3, ymm0, ymm3
+    vmovapd yword [rdi], ymm3
+    vmovupd ymm14, yword [rsp + 672] ; 32-byte Reload
+    vaddpd ymm3, ymm14, ymm6
+    vaddpd ymm3, ymm3, yword [rsp + 224] ; 32-byte Folded Reload
+    vmulpd ymm3, ymm3, ymm7
+    vmovupd ymm15, yword [rsp + 640] ; 32-byte Reload
+    vaddpd ymm3, ymm15, ymm3
+    vmulpd ymm3, ymm3, ymm9
+    vmovupd ymm6, yword [rsp + 832] ; 32-byte Reload
+    vaddpd ymm3, ymm6, ymm3
+    vmovapd yword [rdi + 32], ymm3
+    vaddpd ymm3, ymm5, yword [rsp + 320] ; 32-byte Folded Reload
+    vaddpd ymm3, ymm3, yword [rsp + 32] ; 32-byte Folded Reload
+    vmulpd ymm3, ymm3, ymm7
+    vmovupd ymm11, yword [rsp + 608] ; 32-byte Reload
+    vaddpd ymm3, ymm11, ymm3
+    vmulpd ymm3, ymm3, ymm9
+    vmovupd ymm5, yword [rsp + 800] ; 32-byte Reload
+    vaddpd ymm3, ymm5, ymm3
+    vmovapd yword [rdi + 64], ymm3
+    vaddpd ymm2, ymm2, yword [rsp + 256] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm2, yword [rsp - 96] ; 32-byte Folded Reload
+    vmulpd ymm2, ymm2, ymm7
+    vmovapd ymm3, ymm7
+    vmovupd ymm8, yword [rsp + 576] ; 32-byte Reload
+    vaddpd ymm2, ymm8, ymm2
+    vmulpd ymm2, ymm2, ymm9
+    vmovupd ymm7, yword [rsp + 768] ; 32-byte Reload
+    vaddpd ymm2, ymm7, ymm2
+    vmovapd yword [rdi + 96], ymm2
+    vaddpd ymm2, ymm4, yword [rsp] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm2, yword [rsp - 32] ; 32-byte Folded Reload
+    vmulpd ymm2, ymm2, ymm3
+    vmovupd ymm10, yword [rsp + 544] ; 32-byte Reload
+    vaddpd ymm2, ymm2, ymm10
+    vmulpd ymm2, ymm2, ymm9
+    vmovupd ymm4, yword [rsp + 736] ; 32-byte Reload
+    vaddpd ymm2, ymm4, ymm2
+    vmovapd yword [rdi + 128], ymm2
+    vmulpd ymm2, ymm9, yword [rsp - 128] ; 32-byte Folded Reload
+    vmovupd ymm13, yword [rsp + 704] ; 32-byte Reload
+    vaddpd ymm2, ymm13, ymm2
+    vmovapd yword [rdi + 160], ymm2
+    vaddpd ymm1, ymm0, ymm1
+    vaddpd ymm2, ymm12, ymm1
+    vmovapd ymm1, yword [rel .LCPI0_3] ; ymm1 = [3.402824e+38,3.402824e+38,3.402824e+38,3.402824e+38]
+    vmulpd ymm2, ymm2, ymm1
+    vaddpd ymm2, ymm2, yword [rsp + 288] ; 32-byte Folded Reload
+    vmulpd ymm3, ymm9, yword [rsp + 192] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm2, ymm3
+    vmovapd yword [rdi + 192], ymm2
+    vaddpd ymm2, ymm6, yword [rsp + 160] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm15, ymm2
+    vmulpd ymm2, ymm2, ymm1
+    vaddpd ymm2, ymm14, ymm2
+    vmulpd ymm3, ymm9, yword [rsp + 224] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm2, ymm3
+    vmovapd yword [rdi + 224], ymm2
+    vaddpd ymm2, ymm5, yword [rsp - 64] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm11, ymm2
+    vmulpd ymm2, ymm2, ymm1
+    vaddpd ymm2, ymm2, yword [rsp + 320] ; 32-byte Folded Reload
+    vmulpd ymm3, ymm9, yword [rsp + 32] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm3, ymm2
+    vmovapd yword [rdi + 256], ymm2
+    vaddpd ymm2, ymm7, yword [rsp + 128] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm8, ymm2
+    vmulpd ymm2, ymm2, ymm1
+    vaddpd ymm2, ymm2, yword [rsp + 256] ; 32-byte Folded Reload
+    vmulpd ymm3, ymm9, yword [rsp - 96] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm3, ymm2
+    vmovapd yword [rdi + 288], ymm2
+    vaddpd ymm2, ymm4, yword [rsp + 96] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm10, ymm2
+    vmulpd ymm2, ymm2, ymm1
+    vaddpd ymm2, ymm2, yword [rsp] ; 32-byte Folded Reload
+    vmulpd ymm3, ymm9, yword [rsp - 32] ; 32-byte Folded Reload
+    vaddpd ymm2, ymm3, ymm2
+    vmovapd yword [rdi + 320], ymm2
+    vaddpd ymm0, ymm13, yword [rsp + 64] ; 32-byte Folded Reload
+    vaddpd ymm0, ymm0, yword [rsp - 128] ; 32-byte Folded Reload
+    vmulpd ymm0, ymm0, ymm1
+    vmovapd yword [rdi + 352], ymm0
+    add rsp, 888
+    bench_epilogue
+    ; vzeroupper
+    ret
+
+section .rodata
+
+.LCPI0_0:
+dq 4030721666496593920 ; double 2.9387358770557188E-39
+dq 4030721666496593920 ; double 2.9387358770557188E-39
+dq 4030721666496593920 ; double 2.9387358770557188E-39
+dq 4030721666496593920 ; double 2.9387358770557188E-39
+.LCPI0_1:
+dq -576460752303423489 ; 0xf7ffffffffffffff
+dq -576460752303423489 ; 0xf7ffffffffffffff
+dq -576460752303423489 ; 0xf7ffffffffffffff
+dq -576460752303423489 ; 0xf7ffffffffffffff
+.LCPI0_2:
+dq 4630544841867001856 ; double 38
+dq 4630544841867001856 ; double 38
+dq 4630544841867001856 ; double 38
+dq 4630544841867001856 ; double 38
+.LCPI0_3:
+dq 5183643171103440896 ; double 3.4028236692093846E+38
+dq 5183643171103440896 ; double 3.4028236692093846E+38
+dq 5183643171103440896 ; double 3.4028236692093846E+38
+dq 5183643171103440896 ; double 3.4028236692093846E+38
