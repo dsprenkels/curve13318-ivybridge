@@ -32,7 +32,7 @@ libref12.so: $(ASM_OBJS) $(C_OBJS)
 
 .PHONY: check
 check: libref12.so
-	sage -python test_all.py -v
+	sage -python test_all.py -v $(TESTNAME)
 
 .PHONY: clean
 clean:
