@@ -2,10 +2,15 @@
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
 
-section .text
-global crypto_scalarmult_curve13318_ref12_ge_double
-extern crypto_scalarmult_curve13318_ref12_fe12x4_mul, crypto_scalarmult_curve13318_ref12_fe12x4_squeeze
+%include "fe12_mul.mac"
 
+global crypto_scalarmult_curve13318_ref12_ge_double
+
+extern crypto_scalarmult_curve13318_ref12_fe12x4_mul
+extern crypto_scalarmult_curve13318_ref12_fe12x4_squeeze
+extern crypto_scalarmult_curve13318_ref12_fe12x4_squeeze_noload
+
+section .text
 crypto_scalarmult_curve13318_ref12_ge_double:
     ; The next chain of procedures is an adapted version of  Algorithm 6
     ; from the Renes-Costello-Batina addition laws. [Renes2016]
@@ -30,29 +35,30 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     ; may overflow (23 + 23 > 45).
     ;
     %push ge_double_ctx
-    %define x3          rdi
-    %define y3          rdi + 12*8
-    %define z3          rdi + 24*8
-    %define x           rsi
-    %define y           rsi + 12*8
-    %define z           rsi + 24*8
-    %define t0          rsp
-    %define t1          rsp + 1*384
-    %define t2          rsp + 2*384
-    %define t3          rsp + 3*384
-    %define t4          rsp + 4*384
-    %define t5          rsp + 5*384
-    %define v11         rsp + 6*384
-    %define v34         rsp + 6*384 + 1*96
-    %define v26v30      rsp + 6*384 + 2*96
-    %define old_rdi     rsp + 7*384
-    %define stack_size  7*384 + 32
+    %xdefine x3          rdi
+    %xdefine y3          rdi + 12*8
+    %xdefine z3          rdi + 24*8
+    %xdefine x           rsi
+    %xdefine y           rsi + 12*8
+    %xdefine z           rsi + 24*8
+    %xdefine t0          rsp
+    %xdefine t1          rsp + 1*384
+    %xdefine t2          rsp + 2*384
+    %xdefine t3          rsp + 3*384
+    %xdefine t4          rsp + 4*384
+    %xdefine t5          rsp + 5*384
+    %xdefine v11         rsp + 6*384
+    %xdefine v34         rsp + 6*384 + 1*96
+    %xdefine v26v30      rsp + 6*384 + 2*96
+    %xdefine old_rdi     rsp + 7*384
+    %xdefine scratch     rsp + 7*384 + 32
+    %xdefine stack_size  7*384 + 32 + 768
 
     ; build stack frame
     push rbp
     mov rbp, rsp
     and rsp, -32
-    sub rsp, (stack_size)
+    sub rsp, stack_size
     mov qword [old_rdi], rdi ; we are going to overwrite this during function calls
 
     %assign i 0
@@ -72,52 +78,47 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %assign i i+1
     %endrep
 
-    lea rdi, [t2]
-    lea rsi, [t0]
-    lea rdx, [t1]
-    call crypto_scalarmult_curve13318_ref12_fe12x4_mul wrt ..plt
-    call crypto_scalarmult_curve13318_ref12_fe12x4_squeeze wrt ..plt
+    fe12x4_mul t2, t0, t1, scratch
 
-    vmovapd ymm0, [rel .const_mulsmall]
+    ; t2 is now in ymm{0-11}
+    vmovapd ymm12, [rel .const_mulsmall]
     %assign i 0
     %rep 12
-        vmovapd ymm1, [t2 + 32*i]               ; [v1, v6, v3, v28]
-        vpermilpd ymm2, ymm1, 0b0010            ; [v1, v6, v3, v3]
-        vmulpd ymm2, ymm2, ymm0                 ; computing [v24, v18, v8, v17]
-        vextractf128 xmm3, ymm2, 0b1            ; [v8, v17]
-        vpermilpd xmm4, xmm3, 0b1               ; [v17, v8]
-        vaddsd xmm5, xmm2, xmm4                 ; computing v25
-        vpermilpd xmm2, xmm2, 0b1               ; [v18, v24]
-        vaddsd xmm6, xmm2, xmm4                 ; computing v19
-        vsubsd xmm6, xmm1, xmm6                 ; computing v20
-        vmulsd xmm6, xmm6, [rel .const_neg3]    ; computing v22
-        vpermilpd xmm1, xmm1, 0b1               ; [v6, v1]
-        vaddsd xmm7, xmm3, xmm1                 ; computing v9
-        vmulsd xmm7, xmm7, [rel .const_neg6]    ; computing v11
-        vmovsd qword [v11 + 8*i], xmm7          ; spill v11
-
-        vmovsd qword [t3 + i*32 + 16], xmm6     ; t3 = [y, y, v22, ??]
-        vmovsd qword [t3 + i*32 + 24], xmm6     ; t3 = [y, y, v22, v22]
-        vmovsd qword [t4 + i*32 + 16], xmm5     ; t4 = [y, x, v25, ??]
+        vpermilpd ymm13, ymm%[i], 0b0010    ; [v1, v6, v3, v3]
+        vmulpd ymm%[i], ymm13, ymm12        ; computing [v24, v18, v8, v17]
+        %assign i i+1
+    %endrep
+    fe12x4_squeeze_body
+    %assign i 0
+    %rep 12
+        vextractf128 xmm12, ymm%[i], 0b1            ; [v8, v17]
+        vpermilpd xmm13, xmm12, 0b1                 ; [v17, v8]
+        vaddsd xmm14, xmm%[i], xmm13                ; computing v25
+        vmovsd qword [t4 + i*32 + 16], xmm14        ; t4 = [y, x, v25, ??]
+        vpermilpd xmm%[i], xmm%[i], 0b1             ; [v18, v24]
+        vaddsd xmm13, xmm%[i], xmm13                ; computing v19
+        vmovapd xmm14, oword [t2 + i*32]            ; [v1, v6]
+        vsubsd xmm13, xmm14, xmm13                  ; computing v20
+        vmulsd xmm13, xmm13, [rel .const_neg3]      ; computing v22
+        vmovsd qword [t3 + i*32 + 16], xmm13        ; t3 = [y, y, v22, ??]
+        vmovsd qword [t3 + i*32 + 24], xmm13        ; t3 = [y, y, v22, v22]
+        vpermilpd xmm14, xmm14, 0b1                 ; [v6, v1]
+        vaddsd xmm12, xmm12, xmm14                  ; computing v9
+        vmulsd xmm12, xmm12, [rel .const_neg6]      ; computing v11
+        vmovsd qword [v11 + 8*i], xmm12             ; spill v11
 
         ; put r29 in t4
-        vmovsd xmm8, qword [t2 + i*32 + 24]
-        vmulsd xmm9, xmm8, qword [rel .const_2] ; computing v29a
-        vmovsd qword [t4 + i*32 + 24], xmm9     ; t4 = [y, x, v25, v29a]
-        vmulsd xmm10, xmm8, qword [rel .const_8]; computing v34
-        vmovsd qword [v34 + i*8], xmm10         ; spill v34
-    %assign i i+1
+        vmovsd xmm12, qword [t2 + i*32 + 24]        ; [v28]
+        vmulsd xmm13, xmm12, qword [rel .const_2]   ; computing v29a
+        vmovsd qword [t4 + i*32 + 24], xmm13        ; t4 = [y, x, v25, v29a]
+        vmulsd xmm12, xmm12, qword [rel .const_8]   ; computing v34
+        vmovsd qword [v34 + i*8], xmm12             ; spill v34
+        %assign i i+1
     %endrep
 
-    lea rdi, [t3]
-    call crypto_scalarmult_curve13318_ref12_fe12x4_squeeze wrt ..plt
-    lea rdi, [t4]
-    call crypto_scalarmult_curve13318_ref12_fe12x4_squeeze wrt ..plt
-    lea rdi, [t5]
-    lea rsi, [t3]
-    lea rdx, [t4]
-    call crypto_scalarmult_curve13318_ref12_fe12x4_mul wrt ..plt
-    call crypto_scalarmult_curve13318_ref12_fe12x4_squeeze wrt ..plt
+    fe12x4_squeeze t0
+    fe12x4_squeeze t1
+    fe12x4_mul t5, t3, t4, scratch
 
     ; for the third batched multiplication we'll reuse {t0,t1,t2}
     %assign i 0
@@ -136,19 +137,13 @@ crypto_scalarmult_curve13318_ref12_ge_double:
         vmovsd xmm6, qword [v34 + i*8]          ; reload v34
         vmovsd qword [t1 + 32*i + 16], xmm6     ; t1 = [v5, v13, v34, ??]
         vextractf128 xmm7, ymm0, 0b1            ; [v26, v30]
-        movapd oword [v26v30 + 16*i], xmm7      ; spill [v26, v30]
+        vmovapd oword [v26v30 + 16*i], xmm7     ; spill [v26, v30]
     %assign i i+1
     %endrep
 
-    lea rdi, [t0]
-    call crypto_scalarmult_curve13318_ref12_fe12x4_squeeze wrt ..plt
-    lea rdi, [t1]
-    call crypto_scalarmult_curve13318_ref12_fe12x4_squeeze wrt ..plt
-    lea rdi, [t2]
-    lea rsi, [t0]
-    lea rdx, [t1]
-    call crypto_scalarmult_curve13318_ref12_fe12x4_mul wrt ..plt
-    call crypto_scalarmult_curve13318_ref12_fe12x4_squeeze wrt ..plt
+    fe12x4_squeeze t0
+    fe12x4_squeeze t1
+    fe12x4_mul t2, t0, t1, scratch
 
     mov rdi, qword [old_rdi]
     %assign i 0
@@ -173,10 +168,13 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     ret
 
 section .rodata
-
+align 4,        db 0
 .const_neg3:    dq -3.0
 .const_neg6:    dq -6.0
 .const_2:       dq 2.0
 .const_8:       dq 8.0
 align 32,       db 0
 .const_mulsmall: dq 3.0, 26636.0, -6659.0, -3.0
+
+fe12x4_mul_consts
+fe12x4_squeeze_consts

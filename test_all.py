@@ -72,7 +72,7 @@ scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte 
 
 fe12x4_squeeze = ref12.crypto_scalarmult_curve13318_ref12_fe12x4_squeeze
 fe12x4_squeeze.argtypes = [fe12x4_type]
-fe12x4_mul = ref12.crypto_scalarmult_curve13318_ref12_fe12x4_mul
+fe12x4_mul = ref12.crypto_scalarmult_curve13318_ref12_fe12x4_mul_nosqueeze
 fe12x4_mul.argtypes = [fe12x4_type, fe12x4_type, fe12x4_type]
 
 
@@ -309,6 +309,9 @@ class TestGE(unittest.TestCase):
             y_c[i] = float((2**mask_width - 1) & y.lift() >> shift) * 2**shift
             z_c[i] = float((2**mask_width - 1) & z.lift() >> shift) * 2**shift
             shift += mask_width
+        fe12_squeeze(x_c)
+        fe12_squeeze(y_c)
+        fe12_squeeze(z_c)
         return ge_type(x_c, y_c, z_c)
 
     @staticmethod
@@ -417,20 +420,22 @@ class TestGE(unittest.TestCase):
         actual = E([F(x3), F(y3), F(z3)])
         self.assertEqual(actual, expected)
 
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]))
     @example(0, 0, 1)
     @example(0, 1, 1)
     @example(0, 1, -1)
+    @example(5, 26250914708855074711006248540861075732027942443063102939584266239L, 1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+    st.sampled_from([1, -1]))
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_double(self, x, z, sign):
         self.do_test_double(ge_double)(x, z, sign)
 
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]))
     @example(0, 0, 1)
     @example(0, 1, 1)
     @example(0, 1, -1)
+    @example(5, 26250914708855074711006248540861075732027942443063102939584266239L, 1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_double_c(self, x, z, sign):
         self.do_test_double(ge_double_c)(x, z, sign)
@@ -458,6 +463,7 @@ class TestGE(unittest.TestCase):
     @example(0, 0, 1, 0, 0, 1)
     @example(0, 1, 1, 0, 0, 1)
     @example(0, 1, -1, 0, 0, 1)
+    @example(5, 26250914708855074711006248540861075732027942443063102939584266239L, 1)
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_add_ref(self, x1, z1, sign1, x2, z2, sign2):
         (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
@@ -484,11 +490,12 @@ class TestGE(unittest.TestCase):
         z3 = z3 + t1
         self.assertEqual(E([x3, y3, z3]), point1 + point2)
 
-    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
-           st.sampled_from([1, -1]))
     @example(0, 0, 1)
     @example(0, 1, 1)
     @example(0, 1, -1)
+    @example(5, 26250914708855074711006248540861075732027942443063102939584266239L, 1)
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]))
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_double_ref(self, x, z, sign):
         (x, y, z), point = make_ge(x, z, sign)

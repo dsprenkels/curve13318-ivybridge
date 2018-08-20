@@ -25,57 +25,26 @@ section .bss
 align 32
 scratch_space: resb 1536
 
-section .text
-
-fe12_mul:
-    lea rdi, [rel scratch_space]
-    lea rsi, [rel scratch_space+384]
-    bench_prologue
-    lea rdx, [rel scratch_space+768]
-    ; Multiply two field elements using subtractive karatsuba
+%macro  fe12x4_mul_body 4
+    ; Multiply two field elements using subtractive karatsuba method: body
     ;
-    ; Input:  two vectorized field elements [rsi], [rdx]
-    ; Output: the uncarried product of the two inputs [rdi]
-    ;
-    ; Precondition: TODO
-    ; Postcondition: TODO
-    ;
-    ; Stack layout:
-    ;   - [rsp] up to [rsp+192] contains Ax_shr
-    ;   - [rsp+192] up to [rsp+384] contains Bx_shr
-    ;   - [rsp+384] up to [rsp+576] contains mAx
-    ;   - [rsp+576] up to [rsp+768] contains mBx
-    ;   - [rsp+768] up to [rsp+1120] contains the `l` values
-    ;   - [rsp+1120] up to [rsp+1472] contains the `m` values
-    ;   - [rsp+1472] up to [rsp+1824] contains the `h` values
-    %define A rsi
-    %define B rdx
-    %define C rdi
-    %define A6_shr rsp-128
-    %define A11_shr rsp-96
-    %define l rsp-64
-    %define h rsp+288
+    ; Arguments:
+    ;   - %0:       address to the product of A and B
+    ;   - %1:       two vectorized field element operand A
+    ;   - %2:       two vectorized field element operand B
+    ;   - %3:       address to 768 (24*32) aligned bytes of scratch space
 
-    ; build stack frame
-    push rbp
-    mov rbp, rsp
-    and rsp, -32
-    sub rsp, 640
-
-    ; notes:
-    ;             latency | throughput | ports
-    ;   - vmulpd:       5 |          1 |     0
-    ;   - vaddpd:       3 |          1 |     1
-    ;   - load:         4 |          1 |     2,3
+    %push fe12x4_mul_body_ctx
+    %xdefine C          %1
+    %xdefine A          %2
+    %xdefine B          %3
+    %xdefine l          %4
+    %xdefine A6_shr     %4 + 32*11
+    %xdefine h          %4 + 32*12
+    %xdefine A11_shr    %4 + 32*23
 
     ; compute L
-    ; ymm9 will store intermediate values, ymm10..ymm15 will store the accumulators
-    vmovapd ymm6, yword [A]         ; load A[0]
-    vmovapd ymm7, yword [A+32]      ; load A[1]
-    vmovapd ymm0, yword [B]         ; load B[0]
-    vmovapd ymm1, yword [B+32]      ; load B[1]
-    vmovapd ymm2, yword [B+64]      ; load B[2]
-    vmovapd ymm3, yword [B+96]      ; load B[3]
+    ; ymm9 will stores intermediate values, ymm10..ymm15 will stores the accumulators
     ; round 1/6
     vmulpd ymm10, ymm6, ymm0        ; l0 := A[0] * B[0]
     vmovapd yword [l], ymm10        ; store l[0]
@@ -172,8 +141,6 @@ fe12_mul:
     ;   - either 0, and so exponent part of the double is '0b00000000000'
     ;   - 0 modulo 2^149 and smaller than 2^237 => as such, the 7'th exponent bit is always set.
     ;     Thus we can use a mask operation for these values to divide them by 2*128.
-    ;
-    ; TODO(dsprenkels) Check if this optimisation actually helps.
     ;
     vmovapd ymm8, yword [rel .const_1_1p_neg128]
     vmovapd ymm9, yword [rel .const_unset_bit59_mask]
@@ -460,6 +427,50 @@ fe12_mul:
     vaddpd ymm14, ymm14, yword [l+128]
     vmulpd ymm15, ymm8, yword [h+160]
     vaddpd ymm15, ymm15, yword [l+160]
+
+    %pop fe12x4_mul_body_ctx
+
+%endmacro
+
+section .text
+
+fe12_mul:
+    lea rdi, [rel scratch_space]
+    lea rsi, [rel scratch_space+384]
+    bench_prologue
+    lea rdx, [rel scratch_space+768]
+    ; Multiply two field elements using subtractive karatsuba
+    ;
+    ; Input:  two vectorized field elements [rsi], [rdx]
+    ; Output: the uncarried product of the two inputs [rdi]
+    ;
+    ; Precondition: TODO
+    ; Postcondition: TODO
+    ;
+    ; Stack layout:
+    ;   - [rsp] up to [rsp+192] contains Ax_shr
+    ;   - [rsp+192] up to [rsp+384] contains Bx_shr
+    ;   - [rsp+384] up to [rsp+576] contains mAx
+    ;   - [rsp+576] up to [rsp+768] contains mBx
+    ;   - [rsp+768] up to [rsp+1120] contains the `l` values
+    ;   - [rsp+1120] up to [rsp+1472] contains the `m` values
+    ;   - [rsp+1472] up to [rsp+1824] contains the `h` values
+    %define A rsi
+    %define B rdx
+    %define C rdi
+    %define A6_shr rsp-128
+    %define A11_shr rsp-96
+    %define l rsp-64
+    %define h rsp+288
+
+    ; build stack frame
+    push rbp
+    mov rbp, rsp
+    and rsp, -32
+    sub rsp, 640
+
+    fe12x4_mul_body C, A, B, (rsp-128)
+
     ; store C[{0..5}]
     vmovapd yword [C], ymm10
     vmovapd yword [C+32], ymm11
