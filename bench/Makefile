@@ -3,7 +3,7 @@ NASM :=	  nasm -g -f elf64 $^
 CFLAGS +=   -g -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
 			-Wstrict-prototypes -fPIC -O2 -masm=intel -march=ivybridge
 
-BENCHMARKS := squeeze f64_div128 f64_load fe12_mul
+BENCHMARKS := squeeze f64_div128 f64_load fe12_mul ge_double
 ASM_SCRS := $(wildcard *.asm)
 C_SRCS :=   $(wildcard *.c)
 ASM_OBJS := $(ASM_SCRS:%.asm=%.o)
@@ -17,6 +17,8 @@ run_%: %
 	rm $(patsubst run_%,%,$@)
 
 all: $(BENCHMARKS)
+
+ge_double: main.o ge_double.o ../fe12_mul.o ../fe12_squeeze.o ../fe12_old.c
 
 $(BENCHMARKS): $(patsubst %,%.o,$@) main.o
 

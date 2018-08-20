@@ -1,5 +1,8 @@
 ; Macros for constructing benchmarks
 
+%ifndef BENCH_ASM_
+%define BENCH_ASM_
+
 section .text
 
 global _bench_blank, _bench_fns, _bench_names, _bench_fns_n
@@ -36,3 +39,5 @@ _bench_blank:
     bench_prologue
     bench_epilogue
     ret
+
+%endif

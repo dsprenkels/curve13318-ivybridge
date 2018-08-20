@@ -27,8 +27,6 @@ scratch_space: resb 1536
 
 section .text
 
-global fe12_mul
-
 fe12_mul:
     lea rdi, [rel scratch_space]
     lea rsi, [rel scratch_space+384]
