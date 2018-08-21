@@ -15,7 +15,7 @@ Bernstein, D. J. & Schwabe, P. Prouff, E. & Schaumont, P. (Eds.)
 #ifndef REF12_FE10_H_
 #define REF12_FE10_H_
 
-#include <inttypes.h>
+#include <stdint.h>
 
 static const uint64_t _2P0 = 0x07FFFFDA;
 static const uint64_t _2PRestB25 = 0x03FFFFFE;

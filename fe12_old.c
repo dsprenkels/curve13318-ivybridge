@@ -1,5 +1,5 @@
 #include "fe12.h"
-#include <inttypes.h>
+#include <stdint.h>
 #include <xmmintrin.h>
 
 static inline uint32_t load_3(const uint8_t *in)
