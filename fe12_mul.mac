@@ -265,7 +265,6 @@
     vsubpd ymm5, ymm5, yword [B+160]    ; mB5 := B11_shr - B[5]
     vmulpd ymm15, ymm6, ymm5            ; m5 := mA0 * mB5
     ; compute C[6] := l6 + 0x1p+128 * (m0 + l0 + h0) + 0x26p0*h6
-    ; TODO(dsprenkels) Benchmark to see if different addition order is faster
     vaddpd ymm10, ymm10, yword [l]
     vaddpd ymm10, ymm10, yword [h]
     vmovapd ymm7, yword [rel .const_1_1p_128]
