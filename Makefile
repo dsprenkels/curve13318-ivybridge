@@ -1,4 +1,4 @@
-NASM :=	  nasm -g -f elf64 $^
+NASM :=	  nasm -g -f elf64 -F dwarf $^
 
 CFLAGS +=   -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
 			-Wstrict-prototypes -fPIC -g -O2 -masm=intel -march=ivybridge
@@ -25,7 +25,7 @@ C_OBJS :=   $(C_SRCS:%.c=%.o)
 all: libref12.so
 
 %.o: %.asm
-	$(NASM) -g -f elf64 -l $(patsubst %.o,%.lst,$@) -o $@ $<
+	$(NASM) -l $(patsubst %.o,%.lst,$@) -o $@ $<
 
 libref12.so: $(ASM_OBJS) $(C_OBJS)
 	$(CC) $(CFLAGS) -shared -o $@ $^ $(LDFLAGS) $(LDLIBS)
