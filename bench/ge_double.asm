@@ -321,8 +321,8 @@ ge_double_asm_v2:
         %assign i i+1
     %endrep
 
-    fe12x4_squeeze t0
-    fe12x4_squeeze t1
+    fe12x4_squeeze t3
+    fe12x4_squeeze t4
     fe12x4_mul t5, t3, t4, scratch
 
     ; for the third batched multiplication we'll reuse {t0,t1,t2}
