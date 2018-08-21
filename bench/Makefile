@@ -1,4 +1,4 @@
-NASM :=	  nasm -g -f elf64 $^
+NASM :=	  nasm -g -F dwarf -f elf64 $^
 
 CFLAGS +=   -g -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
 			-Wstrict-prototypes -fPIC -O2 -masm=intel -march=ivybridge
@@ -12,7 +12,7 @@ C_OBJS :=   $(C_SRCS:%.c=%.o)
 run: $(patsubst %,run_%,$(BENCHMARKS))
 
 run_%: %
-	sleep 0.1
+	sleep 1.0
 	./$(patsubst run_%,%,$@)
 	rm $(patsubst run_%,%,$@)
 

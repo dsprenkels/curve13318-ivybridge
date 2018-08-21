@@ -151,9 +151,6 @@
     vmulpd ymm5, ymm8, yword [B+352]   ; B11_shr = 0x1p-128 * B[11];
     vmulpd ymm7, ymm8, yword [A+352]   ; A11_shr = 0x1p-128 * A[11];
 
-    ; TODO(dsprenkels) Currently I am deliberately forgetting A{7..10}_shr, because storing and
-    ; loading will probably take the same resources as loading and vandpd'ing. Check if this is
-    ; actually true.
     ; TODO(dsprenkels) We don't actually need to spill A6_shr, I think. Every round we rotate by
     ; one register. I.e. in round 2, the register ymm10 is only used in the end, so we can safely
     ; use ymm10 for temporary values during that round. Now we have an extra register in which we
