@@ -6,7 +6,7 @@ Convert a fe12 floating point representation to fe10 integer representation
 
 #include "fe12.h"
 #include "fe10.h"
-#include <inttypes.h>
+#include <stdint.h>
 
 static const uint64_t _MASK42 = 0xFFFFFC0000000000;
 static const uint64_t _MASK43 = 0xFFFFF80000000000;

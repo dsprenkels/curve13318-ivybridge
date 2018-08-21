@@ -49,7 +49,7 @@ unsetup:
 	echo '0' | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null
 
 %.o: %.asm
-	$(NASM) -f elf64 -l $(patsubst %.o,%.lst,$@) -o $@ $<
+	$(NASM) -l $(patsubst %.o,%.lst,$@) -o $@ $<
 
 %.d: %.asm
 	$(NASM) -MT $(patsubst %.d,%.o,$@) -M $< >$@

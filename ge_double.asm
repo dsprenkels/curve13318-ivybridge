@@ -88,7 +88,10 @@ crypto_scalarmult_curve13318_ref12_ge_double:
         vmulpd ymm%[i], ymm13, ymm12        ; computing [v24, v18, v8, v17]
         %assign i i+1
     %endrep
+
     fe12x4_squeeze_body
+
+    vmovsd xmm15, qword [rel .const_neg3]
     %assign i 0
     %rep 12
         vextractf128 xmm12, ymm%[i], 0b1            ; [v8, v17]
@@ -99,28 +102,30 @@ crypto_scalarmult_curve13318_ref12_ge_double:
         vaddsd xmm13, xmm%[i], xmm13                ; computing v19
         vmovapd xmm14, oword [t2 + i*32]            ; [v1, v6]
         vsubsd xmm13, xmm14, xmm13                  ; computing v20
-        vmulsd xmm13, xmm13, [rel .const_neg3]      ; computing v22
+        vmulsd xmm13, xmm13, xmm15                  ; computing v22
         vmovsd qword [t3 + i*32 + 16], xmm13        ; t3 = [y, y, v22, ??]
         vmovsd qword [t3 + i*32 + 24], xmm13        ; t3 = [y, y, v22, v22]
         vpermilpd xmm14, xmm14, 0b1                 ; [v6, v1]
         vaddsd xmm12, xmm12, xmm14                  ; computing v9
-        vmulsd xmm12, xmm12, [rel .const_neg6]      ; computing v11
+        vaddsd xmm13, xmm15, xmm15                  ; [-6]
+        vmulsd xmm12, xmm12, xmm13                  ; computing v11
         vmovsd qword [v11 + 8*i], xmm12             ; spill v11
 
         ; put r29 in t4
         vmovsd xmm12, qword [t2 + i*32 + 24]        ; [v28]
-        vmulsd xmm13, xmm12, qword [rel .const_2]   ; computing v29a
+        vaddsd xmm13, xmm12, xmm12                  ; computing v29a
         vmovsd qword [t4 + i*32 + 24], xmm13        ; t4 = [y, x, v25, v29a]
         vmulsd xmm12, xmm12, qword [rel .const_8]   ; computing v34
         vmovsd qword [v34 + i*8], xmm12             ; spill v34
         %assign i i+1
     %endrep
 
-    fe12x4_squeeze t0
-    fe12x4_squeeze t1
+    fe12x4_squeeze t3
+    fe12x4_squeeze t4
     fe12x4_mul t5, t3, t4, scratch
 
     ; for the third batched multiplication we'll reuse {t0,t1,t2}
+    vmovsd xmm15, qword [rel .const_2]
     %assign i 0
     %rep 12
         vmovapd ymm0, [t5 + i*32]               ; [v2, v4, v26, v30]
@@ -128,7 +133,8 @@ crypto_scalarmult_curve13318_ref12_ge_double:
         vsubsd xmm3, xmm0, xmm2                 ; computing v12
         vaddsd xmm4, xmm0, xmm2                 ; computing v13
         vpermilpd xmm5, xmm0, 0b1               ; [v4, v2]
-        vmulsd xmm5, xmm5, qword [rel .const_2] ; computing v5
+        vmulsd xmm5, xmm5, xmm15                ; computing v5
+        ; ^ Choose mul instead of add because of port pressure due to v12 and v13
         vmovsd qword [t0 + 32*i], xmm3          ; t0 = [v12, ??, ??, ??]
         vmovsd qword [t0 + 32*i + 8], xmm3      ; t0 = [v12, v12, ??, ??]
         vmovsd qword [t0 + 32*i + 16], xmm0     ; t0 = [v12, v12, v2, ??]
