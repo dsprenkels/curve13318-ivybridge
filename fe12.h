@@ -35,7 +35,7 @@ Bernstein, D. J. & Schwabe, P. Prouff, E. & Schaumont, P. (Eds.)
 #ifndef REF12_FE12_H_
 #define REF12_FE12_H_
 
-#include <inttypes.h>
+#include <stdint.h>
 
 typedef double fe12[12];
 typedef double fe12_frozen[6];

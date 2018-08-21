@@ -1,5 +1,4 @@
 #include "fe10.h"
-#include <inttypes.h>
 
 /*
 Store a into a field element (fe10) into a bytestring
