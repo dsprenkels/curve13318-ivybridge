@@ -9,6 +9,7 @@ global crypto_scalarmult_curve13318_ref12_ge_double
 extern crypto_scalarmult_curve13318_ref12_fe12x4_mul
 extern crypto_scalarmult_curve13318_ref12_fe12x4_squeeze
 extern crypto_scalarmult_curve13318_ref12_fe12x4_squeeze_noload
+extern printf
 
 section .text
 crypto_scalarmult_curve13318_ref12_ge_double:
@@ -34,6 +35,8 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     ; (because 21 + 24 ≤ 45), but for example 2^23 * 2^23 is *forbidden* as it
     ; may overflow (23 + 23 > 45).
     ;
+    ; TODO(dsprenkels) Vectorise 5 and 29a
+    ;
     %push ge_double_ctx
     %xdefine x3          rdi
     %xdefine y3          rdi + 12*8
@@ -47,9 +50,7 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %xdefine t3          rsp + 3*384
     %xdefine t4          rsp + 4*384
     %xdefine t5          rsp + 5*384
-    %xdefine v11         rsp + 6*384
-    %xdefine v34         rsp + 6*384 + 1*96
-    %xdefine v26v30      rsp + 6*384 + 2*96
+    %xdefine v11v34      rsp + 6*384
     %xdefine old_rdi     rsp + 7*384
     %xdefine scratch     rsp + 7*384 + 32
     %xdefine stack_size  7*384 + 32 + 768
@@ -61,108 +62,128 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     sub rsp, stack_size
     mov qword [old_rdi], rdi ; we are going to overwrite this during function calls
 
+    ; assume forall v in {x, y, z} : |v| ≤ 1.01 * 2^22
+    vxorpd xmm15, xmm15, xmm15                      ; [0, 0]
     %assign i 0
     %rep 12
-        vbroadcastsd ymm0, qword [x + i*8]  ; [x, x, x, x]
-        vbroadcastsd ymm1, qword [y + i*8]  ; [y, y, y, y]
-        vbroadcastsd ymm2, qword [z + i*8]  ; [z, z, z, z]
-        vblendpd ymm3, ymm0, ymm2, 0b1100   ; [x, x, z, z]
-        vblendpd ymm4, ymm0, ymm2, 0b0110   ; [x, z, z, x]
-        vblendpd ymm4, ymm4, ymm1, 0b1000   ; [x, z, z, y]
+        vbroadcastsd ymm0, qword [x + i*8]          ; [x, x, x, x]
+        vbroadcastsd ymm1, qword [y + i*8]          ; [y, y, y, y]
+        vbroadcastsd ymm2, qword [z + i*8]          ; [z, z, z, z]
+        vblendpd ymm3, ymm0, ymm2, 0b1100           ; [x, x, z, z]
+        vblendpd ymm4, ymm0, ymm2, 0b0110           ; [x, z, z, x]
+        vblendpd ymm4, ymm4, ymm1, 0b1000           ; [x, z, z, y]
         vmovapd yword [t0 + i*32], ymm3
         vmovapd yword [t1 + i*32], ymm4
         ; prepare for second mul
-        vmovapd oword [t3 + i*32], xmm1     ; t3 = [y, y, ??, ??]
-        vmovsd qword [t4 + i*32], xmm1      ; t4 = [y, ??, ??, ??]
-        vmovsd qword [t4 + i*32 + 8],xmm0   ; t4 = [y, x, ??, ??]
+        vblendpd xmm5, xmm0, xmm1, 0b01             ; [y, x]
+        vblendpd xmm6, xmm15, xmm0, 0b10            ; [0, x]
+        vaddpd xmm5, xmm5, xmm6                     ; [y, 2*x]
+
+        vmovapd oword [t3 + i*32 + 16], xmm1        ; t3 = [??, ??, y, y]
+        vmovapd oword [t4 + i*32 + 16], xmm5        ; t4 = [??, ??, y, 2*x]
     %assign i i+1
     %endrep
 
-    fe12x4_mul t2, t0, t1, scratch
+    fe12x4_mul t2, t0, t1, scratch                  ; computing [v1, v6, v3, v28]
+                                                    ; |v1|  ≤ 1.01 * 2^21
+                                                    ; |v6|  ≤ 1.01 * 2^21
+                                                    ; |v3|  ≤ 1.01 * 2^21
+                                                    ; |v28| ≤ 1.01 * 2^21
 
     ; t2 is now in ymm{0-11}
     vmovapd ymm12, [rel .const_mulsmall]
     %assign i 0
     %rep 12
-        vpermilpd ymm13, ymm%[i], 0b0010    ; [v1, v6, v3, v3]
-        vmulpd ymm%[i], ymm13, ymm12        ; computing [v24, v18, v8, v17]
-        %assign i i+1
+        vpermilpd ymm13, ymm%[i], 0b0010            ; [v1, v6, v3, v3]
+        vmulpd ymm%[i], ymm13, ymm12                ; computing [v24, v18, v8, v17]
+                                                    ; |v24| ≤ 1.65 * 2^34
+                                                    ; |v18| ≤ 1.65 * 2^34
+                                                    ; |v8|  ≤ 1.65 * 2^34
+                                                    ; |v17| ≤ 1.65 * 2^34
+    %assign i i+1
     %endrep
 
-    fe12x4_squeeze_body
-
-    vmovsd xmm15, qword [rel .const_neg3]
     %assign i 0
     %rep 12
         vextractf128 xmm12, ymm%[i], 0b1            ; [v8, v17]
         vpermilpd xmm13, xmm12, 0b1                 ; [v17, v8]
-        vaddsd xmm14, xmm%[i], xmm13                ; computing v25
-        vmovsd qword [t4 + i*32 + 16], xmm14        ; t4 = [y, x, v25, ??]
+        vaddsd xmm14, xmm%[i], xmm13                ; computing v25 : |v25| ≤ 1.65 * 2^35
         vpermilpd xmm%[i], xmm%[i], 0b1             ; [v18, v24]
-        vaddsd xmm13, xmm%[i], xmm13                ; computing v19
-        vmovapd xmm14, oword [t2 + i*32]            ; [v1, v6]
-        vsubsd xmm13, xmm14, xmm13                  ; computing v20
-        vmulsd xmm13, xmm13, xmm15                  ; computing v22
-        vmovsd qword [t3 + i*32 + 16], xmm13        ; t3 = [y, y, v22, ??]
-        vmovsd qword [t3 + i*32 + 24], xmm13        ; t3 = [y, y, v22, v22]
-        vpermilpd xmm14, xmm14, 0b1                 ; [v6, v1]
-        vaddsd xmm12, xmm12, xmm14                  ; computing v9
-        vaddsd xmm13, xmm15, xmm15                  ; [-6]
-        vmulsd xmm12, xmm12, xmm13                  ; computing v11
-        vmovsd qword [v11 + 8*i], xmm12             ; spill v11
-
-        ; put r29 in t4
-        vmovsd xmm12, qword [t2 + i*32 + 24]        ; [v28]
-        vaddsd xmm13, xmm12, xmm12                  ; computing v29a
-        vmovsd qword [t4 + i*32 + 24], xmm13        ; t4 = [y, x, v25, v29a]
+        vaddsd xmm13, xmm%[i], xmm13                ; computing v19 : |v19| ≤ 1.65 * 2^35
+        vmovapd xmm15, oword [t2 + i*32]            ; [v1, v6]
+        vsubsd xmm13, xmm15, xmm13                  ; computing v20 : |v20| ≤ 1.66 * 2^35
+        vmulsd xmm13, xmm13, qword [rel .const_neg3]; computing v22 : |v20| ≤ 1.25 * 2^37
+        vunpcklpd xmm13, xmm13, xmm14               ; [v22, v25]
+        vpermilpd xmm15, xmm15, 0b1                 ; [v6, v1]
+        vaddsd xmm14, xmm12, xmm15                  ; computing v9  : |v9|  ≤ 1.66 * 2^34
+        vmulsd xmm14, xmm14, qword [rel .const_neg6]; computing v11 : |v11| ≤ 1.25 * 2^37
+        vmovsd xmm12, qword [t2 + 32*i + 24]        ; reload v28
         vmulsd xmm12, xmm12, qword [rel .const_8]   ; computing v34
-        vmovsd qword [v34 + i*8], xmm12             ; spill v34
-        %assign i i+1
-    %endrep
+        vunpcklpd xmm12, xmm14, xmm12               ; [v11, v34]
+        vinsertf128 ymm%[i], ymm12, xmm13, 0b1      ; [v11, v34, v22, v25]
 
-    fe12x4_squeeze t3
-    fe12x4_squeeze t4
-    fe12x4_mul t5, t3, t4, scratch
 
-    ; for the third batched multiplication we'll reuse {t0,t1,t2}
-    vmovsd xmm15, qword [rel .const_2]
-    %assign i 0
-    %rep 12
-        vmovapd ymm0, [t5 + i*32]               ; [v2, v4, v26, v30]
-        vmovsd xmm2, qword [v11 + i*8]          ; v11
-        vsubsd xmm3, xmm0, xmm2                 ; computing v12
-        vaddsd xmm4, xmm0, xmm2                 ; computing v13
-        vpermilpd xmm5, xmm0, 0b1               ; [v4, v2]
-        vmulsd xmm5, xmm5, xmm15                ; computing v5
-        ; ^ Choose mul instead of add because of port pressure due to v12 and v13
-        vmovsd qword [t0 + 32*i], xmm3          ; t0 = [v12, ??, ??, ??]
-        vmovsd qword [t0 + 32*i + 8], xmm3      ; t0 = [v12, v12, ??, ??]
-        vmovsd qword [t0 + 32*i + 16], xmm0     ; t0 = [v12, v12, v2, ??]
-        vmovsd qword [t1 + 32*i], xmm5          ; t1 = [v5, ??, ??, ??]
-        vmovsd qword [t1 + 32*i + 8], xmm4      ; t1 = [v5, v13, ??, ??]
-        vmovsd xmm6, qword [v34 + i*8]          ; reload v34
-        vmovsd qword [t1 + 32*i + 16], xmm6     ; t1 = [v5, v13, v34, ??]
-        vextractf128 xmm7, ymm0, 0b1            ; [v26, v30]
-        vmovapd oword [v26v30 + 16*i], xmm7     ; spill [v26, v30]
     %assign i i+1
     %endrep
 
-    fe12x4_squeeze t0
-    fe12x4_squeeze t1
-    fe12x4_mul t2, t0, t1, scratch
+    fe12x4_squeeze_body                             ; squeezing [v11, v34, v22, v25]
+                                                    ; |v11| ≤ 1.01 * 2^21
+                                                    ; |v34| ≤ 1.01 * 2^21
+                                                    ; |v22| ≤ 1.01 * 2^21
+                                                    ; |v25| ≤ 1.01 * 2^21
 
+    %assign i 0
+    %rep 12
+        vmovapd oword [v11v34 + 16*i], xmm%[i]      ; spill [v11, v34]
+        vextractf128 xmm12, ymm%[i], 0b1            ; [v22, v25]
+        vmovddup xmm13, xmm12                       ; [v22, v22]
+        vmovapd oword [t3 + i*32], xmm13            ; t3 = [v22, v22, y, y]
+        vmovsd xmm14, qword [t2 + i*32 + 24]        ; [v28]
+        ; TODO(dsprenkels) We can optimise the next op with a blend from 0,t2 and a vaddpd
+        vaddsd xmm14, xmm14, xmm14                  ; computing v29a : |v29a| ≤ 1.01 * 2^22
+        vblendpd xmm12, xmm12, xmm14, 0b01          ; [v29a, v25]
+        vmovapd oword [t4 + i*32], xmm12            ; t4 = [v29a, v25, y, 2*x]
+
+    %assign i i+1
+    %endrep
+
+    fe12x4_mul t5, t3, t4, scratch                  ; computing [v30, v26, v2, v5]
+                                                    ; |v30| ≤ 1.01 * 2^21
+                                                    ; |v26| ≤ 1.01 * 2^21
+                                                    ; |v2|  ≤ 1.01 * 2^21
+                                                    ; |v5|  ≤ 1.01 * 2^21
+
+    ; for the third batched multiplication we'll reuse {t0,t1,t2}
+    %assign i 0
+    %rep 12
+        ; TODO(dsprenkels) Eliminate this load (?):
+        vmovapd xmm0, oword [t5 + i*32 + 16]        ; [v2, v5]
+        vmovsd xmm1, qword [v11v34 + i*16]          ; v11
+        vsubsd xmm2, xmm0, xmm1                     ; computing v12
+        vaddsd xmm3, xmm0, xmm1                     ; computing v13
+        vmovapd oword [t0 + 32*i], xmm0             ; t0 = [v2, v5, ??, ??]
+        vmovsd qword [t0 + 32*i + 16], xmm2         ; t0 = [v2, v5, v12, ??]
+        vmovsd xmm4, qword [v11v34 + i*16 + 8]      ; reload v34
+        vmovsd qword [t1 + 32*i], xmm4              ; t1 = [v34, ??, ??, ??]
+        vmovsd qword [t1 + 32*i + 8], xmm2          ; t1 = [v34, v12, ??, ??]
+        vmovsd qword [t1 + 32*i + 16], xmm3         ; t1 = [v34, v12, v13, ??]
+    %assign i i+1
+    %endrep
+
+    fe12x4_mul t2, t0, t1, scratch                  ; computing [v32, v15, v14]
     mov rdi, qword [old_rdi]
     %assign i 0
     %rep 12
-        vmovapd ymm0, [t2 + i*32]               ; [v15, v14, v32, ??]
-        vpermilpd xmm1, xmm0, 0b1               ; [v14, v15]
-        vsubsd xmm2, xmm0, qword [v26v30 + 16*i + 8] ; v31
-        vaddsd xmm3, xmm1, qword [v26v30 + 16*i]; v27
-        vextractf128 xmm4, ymm0, 0b1            ; [v32, ??]
+        ; TODO(dsprenkels) Eliminate these loads:
+        vmovsd xmm0, qword [t2 + 32*i]              ; v32
+        vmovsd xmm1, qword [t2 + 32*i + 8]          ; v15
+        vmovsd xmm2, qword [t2 + 32*i + 16]         ; v14
+        vsubsd xmm1, xmm1, qword [t5 + 32*i]        ; v31
+        vaddsd xmm2, xmm2, qword [t5 + 32*i + 8]    ; v27
         ; save doubled point
-        vmovsd qword [x3 + 8*i], xmm2           ; store x3
-        vmovsd qword [y3 + 8*i], xmm3           ; store y3
-        vmovsd qword [z3 + 8*i], xmm4           ; store z3
+        vmovsd qword [x3 + 8*i], xmm1               ; store x3
+        vmovsd qword [y3 + 8*i], xmm2               ; store y3
+        vmovsd qword [z3 + 8*i], xmm0               ; store z3
     %assign i i+1
     %endrep
 
@@ -184,3 +205,8 @@ align 32,       db 0
 
 fe12x4_mul_consts
 fe12x4_squeeze_consts
+
+.mark1: db `mark 1\n\0`
+.mark2: db `mark 2\n\0`
+.mark3: db `mark 3\n\0`
+.mark4: db `mark 4\n\0`
