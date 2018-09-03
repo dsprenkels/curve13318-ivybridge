@@ -124,7 +124,7 @@ void ge_add(ge p3, const ge p1, const ge p2)
     */
 
     /*   #: Instruction number as mentioned in the paper */
-              // Assume forall x in {x1, y1, z1, x2, y2, z2} : |x| ≤ 1.01 * 2^21
+              // Assume forall x in {x, y, z} : |x| ≤ 1.01 * 2^21
               fe12_mul(t0, x1, x2); // |t0| ≤ 1.68 * 2^49
               fe12_mul(t1, y1, y2); // |t1| ≤ 1.68 * 2^49
               fe12_mul(t2, z1, z2); // |t2| ≤ 1.68 * 2^49

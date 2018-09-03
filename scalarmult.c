@@ -173,12 +173,11 @@ static void ladderstep(ge q, ge ptable[16], uint8_t bits)
     select(p, idx, ptable);
     ge_cneg(p, sign);
     ge_add(q, q, p);
-
 }
 
-static void ladder(const uint8_t *key, ge q, const ge p)
+void ladder(const uint8_t *key, ge q, const ge p)
 {
-    ge ptable[16];
+    ge __attribute__((aligned(64))) ptable[16];
     uint8_t w[51], zeroth_window;
 
     do_precomputation(ptable, p);

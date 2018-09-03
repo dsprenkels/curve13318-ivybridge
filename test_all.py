@@ -517,7 +517,7 @@ class TestGE(unittest.TestCase):
         z3 = z3 + z3;
         self.assertEqual(E([x3, y3, z3]), 2*point)
 
-    @unittest.skip('only for debugging')
+    # @unittest.skip('only for debugging')
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
            st.sampled_from([1, -1]))
     @example(0, 0, 1)
@@ -545,20 +545,26 @@ class TestGE(unittest.TestCase):
         t3 =  x *  y;       t3 = t3 + t3;       z3 =  x *  z
         z3 = z3 + z3;       y3 =  b * t2;       y3 = y3 - z3
         x3 = y3 + y3;       y3 = x3 + y3;       x3 = t1 - y3
+
         y3 = t1 + y3;       y3 = x3 * y3;       x3 = x3 * t3
         t3 = t2 + t2;       t2 = t2 + t3;       z3 =  b * z3
         z3 = z3 - t2;       z3 = z3 - t0;       t3 = z3 + z3
         z3 = z3 + t3;       t3 = t0 + t0;       t0 = t3 + t0
+
         t0 = t0 - t2;       t0 = t0 * z3;       y3 = y3 + t0
         t0 =  y *  z;       t0 = t0 + t0;       z3 = t0 * z3
         x3 = x3 - z3;       z3 = t0 * t1;       z3 = z3 + z3
         z3 = z3 + z3;
 
+        x3_ref = x3
+        y3_ref = y3
+        z3_ref = z3
+
         note("[x3_asm, y3_asm, z3_asm]: {}".format([x3_asm, y3_asm, z3_asm]))
         note("[x3_ref, y3_ref, z3_ref]: {}".format([x3_ref, y3_ref, z3_ref]))
         self.assertEqual(x3_asm, x3_ref)
-        # self.assertEqual(y3_asm, y3_ref)
-        # self.assertEqual(z3_asm, z3_ref)
+        self.assertEqual(y3_asm, y3_ref)
+        self.assertEqual(z3_asm, z3_ref)
 
 class TestScalarmult(unittest.TestCase):
     @staticmethod
