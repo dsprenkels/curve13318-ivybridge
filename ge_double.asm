@@ -84,11 +84,7 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %assign i i+1
     %endrep
 
-    fe12x4_mul t2, t0, t1, scratch                  ; computing [v1, v6, v3, v28]
-                                                    ; |v1|  ≤ 1.01 * 2^21
-                                                    ; |v6|  ≤ 1.01 * 2^21
-                                                    ; |v3|  ≤ 1.01 * 2^21
-                                                    ; |v28| ≤ 1.01 * 2^21
+    fe12x4_mul t2, t0, t1, scratch                  ; computing [v1, v6, v3, v28] ≤ 1.01 * 2^21
 
     ; t2 is now in ymm{0-11}
     vmovapd ymm12, [rel .const_mulsmall]
@@ -96,10 +92,10 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %rep 12
         vpermilpd ymm13, ymm%[i], 0b0010            ; [v1, v6, v3, v3]
         vmulpd ymm%[i], ymm13, ymm12                ; computing [v24, v18, v8, v17]
-                                                    ; |v24| ≤ 1.65 * 2^34
-                                                    ; |v18| ≤ 1.65 * 2^34
-                                                    ; |v8|  ≤ 1.65 * 2^34
-                                                    ; |v17| ≤ 1.65 * 2^34
+                                                    ; |v24| ≤ 1.52 * 2^22
+                                                    ; |v18| ≤ 1.65 * 2^35
+                                                    ; |v8|  ≤ 1.65 * 2^33
+                                                    ; |v17| ≤ 1.52 * 2^22
     %assign i i+1
     %endrep
 
@@ -107,30 +103,26 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %rep 12
         vextractf128 xmm12, ymm%[i], 0b1            ; [v8, v17]
         vpermilpd xmm13, xmm12, 0b1                 ; [v17, v8]
-        vaddsd xmm14, xmm%[i], xmm13                ; computing v25 : |v25| ≤ 1.65 * 2^35
+        vaddsd xmm14, xmm%[i], xmm13                ; computing v25 : |v25| ≤ 1.52 * 2^23
         vpermilpd xmm%[i], xmm%[i], 0b1             ; [v18, v24]
-        vaddsd xmm13, xmm%[i], xmm13                ; computing v19 : |v19| ≤ 1.65 * 2^35
+        vaddsd xmm13, xmm%[i], xmm13                ; computing v19 : |v19| ≤ 1.66 * 2^35
         vmovapd xmm15, oword [t2 + i*32]            ; [v1, v6]
-        vsubsd xmm13, xmm15, xmm13                  ; computing v20 : |v20| ≤ 1.66 * 2^35
-        vmulsd xmm13, xmm13, qword [rel .const_neg3]; computing v22 : |v20| ≤ 1.25 * 2^37
+        vsubsd xmm13, xmm15, xmm13                  ; computing v20 : |v20| ≤ 1.67 * 2^35
+        vmulsd xmm13, xmm13, qword [rel .const_neg3]; computing v22 : |v20| ≤ 1.26 * 2^37
         vunpcklpd xmm13, xmm13, xmm14               ; [v22, v25]
         vpermilpd xmm15, xmm15, 0b1                 ; [v6, v1]
-        vaddsd xmm14, xmm12, xmm15                  ; computing v9  : |v9|  ≤ 1.66 * 2^34
-        vmulsd xmm14, xmm14, qword [rel .const_neg6]; computing v11 : |v11| ≤ 1.25 * 2^37
+        vaddsd xmm14, xmm12, xmm15                  ; computing v9  : |v9|  ≤ 1.66 * 2^33
+        vmulsd xmm14, xmm14, qword [rel .const_neg6]; computing v11 : |v11| ≤ 1.25 * 2^36
         vmovsd xmm12, qword [t2 + 32*i + 24]        ; reload v28
-        vmulsd xmm12, xmm12, qword [rel .const_8]   ; computing v34
+        ; TODO(dsprenkels) Left here, was recomputing bounds; need graph sheet
+        vmulsd xmm12, xmm12, qword [rel .const_8]   ; computing v34 : |v34| ≤ 1.01 * 2^24
         vunpcklpd xmm12, xmm14, xmm12               ; [v11, v34]
         vinsertf128 ymm%[i], ymm12, xmm13, 0b1      ; [v11, v34, v22, v25]
-
 
     %assign i i+1
     %endrep
 
-    fe12x4_squeeze_body                             ; squeezing [v11, v34, v22, v25]
-                                                    ; |v11| ≤ 1.01 * 2^21
-                                                    ; |v34| ≤ 1.01 * 2^21
-                                                    ; |v22| ≤ 1.01 * 2^21
-                                                    ; |v25| ≤ 1.01 * 2^21
+    fe12x4_squeeze_body                             ; squeezing [v11, v34, v22, v25] ≤ 1.01 * 2^21
 
     %assign i 0
     %rep 12
@@ -139,7 +131,7 @@ crypto_scalarmult_curve13318_ref12_ge_double:
         vmovddup xmm13, xmm12                       ; [v22, v22]
         vmovapd oword [t3 + i*32], xmm13            ; t3 = [v22, v22, y, y]
         vmovsd xmm14, qword [t2 + i*32 + 24]        ; [v28]
-        ; TODO(dsprenkels) We can optimise the next op with a blend from 0,t2 and a vaddpd
+        ; TODO(dsprenkels) We can maybe optimise the next op with a blend from 0,t2 and a vaddpd
         vaddsd xmm14, xmm14, xmm14                  ; computing v29a : |v29a| ≤ 1.01 * 2^22
         vblendpd xmm12, xmm12, xmm14, 0b01          ; [v29a, v25]
         vmovapd oword [t4 + i*32], xmm12            ; t4 = [v29a, v25, y, 2*x]
@@ -147,11 +139,7 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %assign i i+1
     %endrep
 
-    fe12x4_mul t5, t3, t4, scratch                  ; computing [v30, v26, v2, v5]
-                                                    ; |v30| ≤ 1.01 * 2^21
-                                                    ; |v26| ≤ 1.01 * 2^21
-                                                    ; |v2|  ≤ 1.01 * 2^21
-                                                    ; |v5|  ≤ 1.01 * 2^21
+    fe12x4_mul t5, t3, t4, scratch                  ; computing [v30, v26, v2, v5] ≤ 1.01 * 2^21
 
     ; for the third batched multiplication we'll reuse {t0,t1,t2}
     %assign i 0
@@ -159,8 +147,8 @@ crypto_scalarmult_curve13318_ref12_ge_double:
         ; TODO(dsprenkels) Eliminate this load (?):
         vmovapd xmm0, oword [t5 + i*32 + 16]        ; [v2, v5]
         vmovsd xmm1, qword [v11v34 + i*16]          ; v11
-        vsubsd xmm2, xmm0, xmm1                     ; computing v12
-        vaddsd xmm3, xmm0, xmm1                     ; computing v13
+        vsubsd xmm2, xmm0, xmm1                     ; computing v12 : |v12| ≤ 1.01 * 2^22
+        vaddsd xmm3, xmm0, xmm1                     ; computing v13 : |v13| ≤ 1.01 * 2^22
         vmovapd oword [t0 + 32*i], xmm0             ; t0 = [v2, v5, ??, ??]
         vmovsd qword [t0 + 32*i + 16], xmm2         ; t0 = [v2, v5, v12, ??]
         vmovsd xmm4, qword [v11v34 + i*16 + 8]      ; reload v34
@@ -170,7 +158,7 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %assign i i+1
     %endrep
 
-    fe12x4_mul t2, t0, t1, scratch                  ; computing [v32, v15, v14]
+    fe12x4_mul t2, t0, t1, scratch                  ; computing [v32, v15, v14, ??]
     mov rdi, qword [old_rdi]
     %assign i 0
     %rep 12
@@ -178,8 +166,8 @@ crypto_scalarmult_curve13318_ref12_ge_double:
         vmovsd xmm0, qword [t2 + 32*i]              ; v32
         vmovsd xmm1, qword [t2 + 32*i + 8]          ; v15
         vmovsd xmm2, qword [t2 + 32*i + 16]         ; v14
-        vsubsd xmm1, xmm1, qword [t5 + 32*i]        ; v31
-        vaddsd xmm2, xmm2, qword [t5 + 32*i + 8]    ; v27
+        vsubsd xmm1, xmm1, qword [t5 + 32*i]        ; computing v31 : |v31| ≤ 1.01 * 2^22
+        vaddsd xmm2, xmm2, qword [t5 + 32*i + 8]    ; computing v27 : |v27| ≤ 1.01 * 2^22
         ; save doubled point
         vmovsd qword [x3 + 8*i], xmm1               ; store x3
         vmovsd qword [y3 + 8*i], xmm2               ; store y3
@@ -195,18 +183,12 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     ret
 
 section .rodata
-align 4,        db 0
-.const_neg3:    dq -3.0
-.const_neg6:    dq -6.0
-.const_2:       dq 2.0
-.const_8:       dq 8.0
-align 32,       db 0
-.const_mulsmall: dq 3.0, 26636.0, -6659.0, -3.0
-
 fe12x4_mul_consts
 fe12x4_squeeze_consts
 
-.mark1: db `mark 1\n\0`
-.mark2: db `mark 2\n\0`
-.mark3: db `mark 3\n\0`
-.mark4: db `mark 4\n\0`
+align 32,       db 0
+.const_mulsmall: dq 3.0, 26636.0, -6659.0, -3.0
+align 4,        db 0
+.const_neg3:    dq -3.0
+.const_neg6:    dq -6.0
+.const_8:       dq 8.0
