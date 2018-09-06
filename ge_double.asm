@@ -51,9 +51,9 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %xdefine t4          rsp + 4*384
     %xdefine t5          rsp + 5*384
     %xdefine v11v34      rsp + 6*384
-    %xdefine old_rdi     rsp + 7*384
-    %xdefine scratch     rsp + 7*384 + 32
-    %xdefine stack_size  7*384 + 32 + 768
+    %xdefine old_rdi     rsp + 6*384 + 192
+    %xdefine scratch     rsp + 6*384 + 256
+    %xdefine stack_size  6*384 + 256 + 768
 
     ; build stack frame
     push rbp
