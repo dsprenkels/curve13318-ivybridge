@@ -12,18 +12,46 @@
 
 #define scalarmult crypto_scalarmult_curve13318_scalarmult
 
-static inline void cmov(ge dest, const ge src, bool c)
+static inline void ge_zero(ge p)
 {
     for (unsigned int i = 0; i < 3; i++) {
         for (unsigned int j = 0; j < 12; j++) {
-            dest[i][j] = (!c)*dest[i][j] + c*src[i][j];
+            p[i][j] = 0;
         }
     }
 }
 
+// Conditionally add an element, assumes dest == {0}
+static inline void cmov(ge dest, const ge src, uint64_t mask)
+{
+    for (unsigned int i = 0; i < 3; i++) {
+        for (unsigned int j = 0; j < 12; j++) {
+            union limb {
+                double d;
+                uint64_t u64;
+            } tmp1 = { .d = src[i][j] }, tmp2 = { .d = dest[i][j] };
+            tmp2.u64 |= tmp1.u64 & mask;
+            dest[i][j] = tmp2.d;
+        }
+    }
+}
+
+// Conditionally move the neutral element, assumes dest == {0}
+static inline void cmov_neutral(ge dest, uint64_t mask)
+{
+    union limb {
+        double d;
+        uint64_t u64;
+    } tmp1 = { .d = 1.0 }, tmp2 = { .d = dest[1][0] };
+    tmp2.u64 |= tmp1.u64 & mask;
+    dest[1][0] = tmp2.d;
+}
+
 static void select(ge dest, uint8_t idx, const ge ptable[16])
 {
-    for (unsigned int i = 0; i < 16; i++) cmov(dest, ptable[i], i == idx);
+    ge_zero(dest);
+    cmov_neutral(dest, -(int64_t)(idx == 0x1F));
+    for (unsigned int i = 0; i < 16; i++) cmov(dest, ptable[i], -(int64_t)(i == idx));
 }
 
 static void do_precomputation(ge ptable[16], const ge p)
@@ -155,9 +183,9 @@ static void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t
 
 static void ladderstep(ge q, ge ptable[16], uint8_t bits)
 {
-    ge p;
+    ge __attribute__((aligned(64))) p;
     // Our lookup table is one-based indexed. The neutral element is not stored
-    // in `ptable`, but written by `ge_zero`. The mapping from `bits` to `idx`
+    // in `ptable`, but written by `ge_neutral`. The mapping from `bits` to `idx`
     // is defined by the following:
     //
     // compute_idx :: Word8 -> Word8
@@ -169,7 +197,6 @@ static void ladderstep(ge q, ge ptable[16], uint8_t bits)
     const uint8_t idx = ((~bits & signmask) | ((bits - 1) & ~signmask)) & 0x1F;
 
     for (int i = 0; i < 5; i++) ge_double(q, q);
-    ge_zero(p);
     select(p, idx, ptable);
     ge_cneg(p, sign);
     ge_add(q, q, p);
@@ -185,7 +212,8 @@ void ladder(const uint8_t *key, ge q, const ge p)
 
     // Do double and add scalar multiplication
     ge_zero(q);
-    cmov(q, ptable[0], zeroth_window);
+    cmov_neutral(q, -(int64_t)(zeroth_window == 0));
+    cmov(q, ptable[0], -(int64_t)(zeroth_window == 1));
     for (unsigned int i = 0; i < 51; i++) {
         ladderstep(q, ptable, w[i]);
     }
@@ -193,7 +221,7 @@ void ladder(const uint8_t *key, ge q, const ge p)
 
 int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
 {
-    ge p, q;
+    ge __attribute__((aligned(64))) p, __attribute__((aligned(64))) q;
     uint8_t e[32];
 
     // Prologue: save the MxCsr register state

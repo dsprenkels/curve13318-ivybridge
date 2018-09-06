@@ -13,7 +13,7 @@ point on E is represented by its projective coordinates, i.e. (X : Y : Z).
 
 typedef fe12 ge[3];
 
-#define ge_zero crypto_scalarmult_curve13318_ref12_ge_zero
+#define ge_neutral crypto_scalarmult_curve13318_ref12_ge_neutral
 #define ge_copy crypto_scalarmult_curve13318_ref12_ge_copy
 #define ge_cneg crypto_scalarmult_curve13318_ref12_ge_cneg
 #define ge_frombytes crypto_scalarmult_curve13318_ref12_ge_frombytes
@@ -25,7 +25,7 @@ typedef fe12 ge[3];
 /*
 Write the neutral element (0 : 1 : 0) to point
 */
-static inline void ge_zero(ge point) {
+static inline void ge_neutral(ge point) {
     fe12_zero(point[0]);
     fe12_one(point[1]);
     fe12_zero(point[2]);
