@@ -451,7 +451,7 @@
     ; expects them to be.
     ;
     ; Call this routine if you have just called fe12x4_mul_body and intend
-    ; to now squeeze the result using fe12_squeeze.
+    ; to now squeeze the result using fe12x4_squeeze_noload.
     %push fe12x4_mul_reload_C_high_ctx
     %xdefine C %1
 
@@ -508,6 +508,33 @@
     fe12x4_mul_store_C_low C
 
     %pop fe12x4_mul_nosqueeze_ctx
+%endmacro
+
+%macro fe12x4_mul_nosave 4
+    ; Multiply two field elements method and *squeeze* but do not save the
+    ; result to the stack.
+    ;
+    ; Use this routine if you intend to read the result from xmm{0..11}
+    ; immediately after calling this macro.
+    ;
+    ; Arguments:
+    ;   - %0:       address to the product of A and B
+    ;   - %1:       two vectorized field element operand A
+    ;   - %2:       two vectorized field element operand B
+    ;   - %3:       address to 768 (24*32) aligned bytes of scratch space
+    %push fe12x4_mul_nosave_ctx
+
+    %xdefine C          %1
+    %xdefine A          %2
+    %xdefine B          %3
+    %xdefine scratch    %4
+
+    fe12x4_mul_preload A, B
+    fe12x4_mul_body C, A, B, scratch
+    fe12x4_mul_reload_C_high C
+    fe12x4_squeeze_body
+
+    %pop fe12x4_mul_nosave_ctx
 %endmacro
 
 %macro fe12x4_mul_consts 0

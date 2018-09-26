@@ -22,14 +22,16 @@ static inline void ge_zero(ge p)
 }
 
 // Conditionally add an element, assumes dest == {0}
-static inline void cmov(ge dest, const ge src, uint64_t mask)
+void cmov(ge dest, const ge src, uint64_t mask)
 {
     for (unsigned int i = 0; i < 3; i++) {
         for (unsigned int j = 0; j < 12; j++) {
             union limb {
                 double d;
                 uint64_t u64;
-            } tmp1 = { .d = src[i][j] }, tmp2 = { .d = dest[i][j] };
+            };
+            union limb __attribute__((aligned(64))) tmp1 = { .d = src[i][j] };
+            union limb __attribute__((aligned(64))) tmp2 = { .d = dest[i][j] };
             tmp2.u64 |= tmp1.u64 & mask;
             dest[i][j] = tmp2.d;
         }
@@ -37,17 +39,19 @@ static inline void cmov(ge dest, const ge src, uint64_t mask)
 }
 
 // Conditionally move the neutral element, assumes dest == {0}
-static inline void cmov_neutral(ge dest, uint64_t mask)
+void cmov_neutral(ge dest, uint64_t mask)
 {
     union limb {
         double d;
         uint64_t u64;
-    } tmp1 = { .d = 1.0 }, tmp2 = { .d = dest[1][0] };
+    };
+    union limb __attribute__((aligned(64))) tmp1 = { .d = 1.0 };
+    union limb __attribute__((aligned(64))) tmp2 = { .d = dest[1][0] };
     tmp2.u64 |= tmp1.u64 & mask;
     dest[1][0] = tmp2.d;
 }
 
-static void select(ge dest, uint8_t idx, const ge ptable[16])
+static inline void select(ge dest, uint8_t idx, const ge ptable[16])
 {
     ge_zero(dest);
     cmov_neutral(dest, -(int64_t)(idx == 0x1F));
