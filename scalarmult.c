@@ -47,14 +47,14 @@ static inline void cmov_neutral(ge dest, uint64_t mask)
     dest[1][0] = tmp2.d;
 }
 
-void select(ge dest, uint8_t idx, const ge ptable[16])
+static void select(ge dest, uint8_t idx, const ge ptable[16])
 {
     ge_zero(dest);
     cmov_neutral(dest, -(int64_t)(idx == 0x1F));
     for (unsigned int i = 0; i < 16; i++) cmov(dest, ptable[i], -(int64_t)(i == idx));
 }
 
-void do_precomputation(ge ptable[16], const ge p)
+static void do_precomputation(ge ptable[16], const ge p)
 {
     ge_copy(ptable[0], p);
     ge_double(ptable[1], ptable[0]);
@@ -74,7 +74,7 @@ void do_precomputation(ge ptable[16], const ge p)
     ge_double(ptable[15], ptable[7]);
 }
 
-void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t *e)
+static void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t *e)
 {
     // Decode the key bytes into windows and ripple the subtraction carry
     w[50] = e[ 0] & 0x1F;
@@ -181,7 +181,7 @@ void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t *e)
     *zeroth_window = ((w[0] >> 5) ^ (w[0] >> 4)) & 0x1;
 }
 
-void ladderstep(ge q, ge ptable[16], uint8_t bits)
+static void ladderstep(ge q, ge ptable[16], uint8_t bits)
 {
     ge __attribute__((aligned(64))) p;
     // Our lookup table is one-based indexed. The neutral element is not stored
