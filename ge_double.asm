@@ -6,11 +6,6 @@
 
 global crypto_scalarmult_curve13318_ref12_ge_double
 
-extern crypto_scalarmult_curve13318_ref12_fe12x4_mul
-extern crypto_scalarmult_curve13318_ref12_fe12x4_squeeze
-extern crypto_scalarmult_curve13318_ref12_fe12x4_squeeze_noload
-extern printf
-
 section .text
 crypto_scalarmult_curve13318_ref12_ge_double:
     ; The next chain of procedures is an adapted version of  Algorithm 6
@@ -51,16 +46,14 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %xdefine t4          rsp + 4*384
     %xdefine t5          rsp + 5*384
     %xdefine v11v34      rsp + 6*384
-    %xdefine old_rdi     rsp + 6*384 + 192
-    %xdefine scratch     rsp + 6*384 + 256
-    %xdefine stack_size  6*384 + 256 + 768
+    %xdefine scratch     rsp + 6*384 + 192
+    %xdefine stack_size  6*384 + 192 + 768
 
     ; build stack frame
     push rbp
     mov rbp, rsp
     and rsp, -32
     sub rsp, stack_size
-    mov qword [old_rdi], rdi ; we are going to overwrite this during function calls
 
     ; assume forall v in {x, y, z} : |v| ≤ 1.01 * 2^22
     vxorpd xmm15, xmm15, xmm15                      ; [0, 0]
@@ -114,7 +107,7 @@ crypto_scalarmult_curve13318_ref12_ge_double:
         vaddsd xmm14, xmm12, xmm15                  ; computing v9  : |v9|  ≤ 1.66 * 2^33
         vmulsd xmm14, xmm14, qword [rel .const_neg6]; computing v11 : |v11| ≤ 1.25 * 2^36
         vmovsd xmm12, qword [t2 + 32*i + 24]        ; reload v28
-        ; TODO(dsprenkels) Left here, was recomputing bounds; need graph sheet
+        ; TODO(dsprenkels) Maybe parallelise computation [v11, v34] to save one vmulsd op
         vmulsd xmm12, xmm12, qword [rel .const_8]   ; computing v34 : |v34| ≤ 1.01 * 2^24
         vunpcklpd xmm12, xmm14, xmm12               ; [v11, v34]
         vinsertf128 ymm%[i], ymm12, xmm13, 0b1      ; [v11, v34, v22, v25]
@@ -158,20 +151,17 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %assign i i+1
     %endrep
 
-    fe12x4_mul t2, t0, t1, scratch                  ; computing [v32, v15, v14, ??]
-    mov rdi, qword [old_rdi]
+    fe12x4_mul_nosave t2, t0, t1, scratch           ; computing [v32, v15, v14, ??] ≤ 1.01 * 2^21
     %assign i 0
     %rep 12
-        ; TODO(dsprenkels) Eliminate these loads:
-        vmovsd xmm0, qword [t2 + 32*i]              ; v32
-        vmovsd xmm1, qword [t2 + 32*i + 8]          ; v15
-        vmovsd xmm2, qword [t2 + 32*i + 16]         ; v14
-        vsubsd xmm1, xmm1, qword [t5 + 32*i]        ; computing v31 : |v31| ≤ 1.01 * 2^22
-        vaddsd xmm2, xmm2, qword [t5 + 32*i + 8]    ; computing v27 : |v27| ≤ 1.01 * 2^22
+        vpermilpd xmm12, xmm%[i], 0b1               ; v15
+        vextractf128 xmm13, ymm%[i], 0b1            ; v14
+        vsubsd xmm12, xmm12, qword [t5 + 32*i]      ; computing v31 : |v31| ≤ 1.01 * 2^22
+        vaddsd xmm13, xmm13, qword [t5 + 32*i + 8]  ; computing v27 : |v27| ≤ 1.01 * 2^22
         ; save doubled point
-        vmovsd qword [x3 + 8*i], xmm1               ; store x3
-        vmovsd qword [y3 + 8*i], xmm2               ; store y3
-        vmovsd qword [z3 + 8*i], xmm0               ; store z3
+        vmovsd qword [x3 + 8*i], xmm12              ; store x3
+        vmovsd qword [y3 + 8*i], xmm13              ; store y3
+        vmovsd qword [z3 + 8*i], xmm%[i]            ; store z3
     %assign i i+1
     %endrep
 
