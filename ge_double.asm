@@ -165,11 +165,11 @@ crypto_scalarmult_curve13318_ref12_ge_double:
     %assign i i+1
     %endrep
 
-    %pop ge_double_ctx
-
     ; restore stack frame
     mov rsp, rbp
     pop rbp
+
+    %pop ge_double_ctx
     ret
 
 section .rodata

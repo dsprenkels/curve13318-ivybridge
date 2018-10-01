@@ -37,105 +37,105 @@
     ;
     ; Registers:
     ;   - ymm0..ymm11:  four input and output field elments
-    ;   - ymm12,ymm13:  large values to force precision loss
+    ;   - ymm14,ymm14:  large values to force precision loss
     ;   - ymm14,ymm15:  two temporary registers for t0 and t1
 
 
     ; round 1
-    vmovapd ymm12, yword [rel .precisionloss0]
-    vmovapd ymm13, yword [rel .precisionloss6]
-    vaddpd ymm14, ymm0, ymm12
-    vaddpd ymm15, ymm6, ymm13
-    vsubpd ymm14, ymm14, ymm12
-    vsubpd ymm15, ymm15, ymm13
-    vaddpd ymm1, ymm1, ymm14
+    vmovapd ymm14, yword [rel .precisionloss0]
+    vaddpd ymm15, ymm0, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm1, ymm1, ymm15
+    vsubpd ymm0, ymm0, ymm15
+    vmovapd ymm14, yword [rel .precisionloss6]
+    vaddpd ymm15, ymm6, ymm14
+    vsubpd ymm15, ymm15, ymm14
     vaddpd ymm7, ymm7, ymm15
-    vsubpd ymm0, ymm0, ymm14
     vsubpd ymm6, ymm6, ymm15
 
     ; round 2
-    vmovapd ymm12, yword [rel .precisionloss1]
-    vmovapd ymm13, yword [rel .precisionloss7]
-    vaddpd ymm14, ymm1, ymm12
-    vaddpd ymm15, ymm7, ymm13
-    vsubpd ymm14, ymm14, ymm12
-    vsubpd ymm15, ymm15, ymm13
-    vaddpd ymm2, ymm2, ymm14
+    vmovapd ymm14, yword [rel .precisionloss1]
+    vaddpd ymm15, ymm1, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm2, ymm2, ymm15
+    vsubpd ymm1, ymm1, ymm15
+    vmovapd ymm14, yword [rel .precisionloss7]
+    vaddpd ymm15, ymm7, ymm14
+    vsubpd ymm15, ymm15, ymm14
     vaddpd ymm8, ymm8, ymm15
-    vsubpd ymm1, ymm1, ymm14
     vsubpd ymm7, ymm7, ymm15
 
     ; round 3
-    vmovapd ymm12, yword [rel .precisionloss2]
-    vmovapd ymm13, yword [rel .precisionloss8]
-    vaddpd ymm14, ymm2, ymm12
-    vaddpd ymm15, ymm8, ymm13
-    vsubpd ymm14, ymm14, ymm12
-    vsubpd ymm15, ymm15, ymm13
-    vaddpd ymm3, ymm3, ymm14
+    vmovapd ymm14, yword [rel .precisionloss2]
+    vaddpd ymm15, ymm2, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm3, ymm3, ymm15
+    vsubpd ymm2, ymm2, ymm15
+    vmovapd ymm14, yword [rel .precisionloss8]
+    vaddpd ymm15, ymm8, ymm14
+    vsubpd ymm15, ymm15, ymm14
     vaddpd ymm9, ymm9, ymm15
-    vsubpd ymm2, ymm2, ymm14
     vsubpd ymm8, ymm8, ymm15
 
     ; round 4
-    vmovapd ymm12, yword [rel .precisionloss3]
-    vmovapd ymm13, yword [rel .precisionloss9]
-    vaddpd ymm14, ymm3, ymm12
-    vaddpd ymm15, ymm9, ymm13
-    vsubpd ymm14, ymm14, ymm12
-    vsubpd ymm15, ymm15, ymm13
-    vaddpd ymm4, ymm4, ymm14
+    vmovapd ymm14, yword [rel .precisionloss3]
+    vaddpd ymm15, ymm3, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm4, ymm4, ymm15
+    vsubpd ymm3, ymm3, ymm15
+    vmovapd ymm14, yword [rel .precisionloss9]
+    vaddpd ymm15, ymm9, ymm14
+    vsubpd ymm15, ymm15, ymm14
     vaddpd ymm10, ymm10, ymm15
-    vsubpd ymm3, ymm3, ymm14
     vsubpd ymm9, ymm9, ymm15
 
     ; round 5
-    vmovapd ymm12, yword [rel .precisionloss4]
-    vmovapd ymm13, yword [rel .precisionloss10]
-    vaddpd ymm14, ymm4, ymm12
-    vaddpd ymm15, ymm10, ymm13
-    vsubpd ymm14, ymm14, ymm12
-    vsubpd ymm15, ymm15, ymm13
-    vaddpd ymm5, ymm5, ymm14
+    vmovapd ymm14, yword [rel .precisionloss4]
+    vaddpd ymm15, ymm4, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm5, ymm5, ymm15
+    vsubpd ymm4, ymm4, ymm15
+    vmovapd ymm14, yword [rel .precisionloss10]
+    vaddpd ymm15, ymm10, ymm14
+    vsubpd ymm15, ymm15, ymm14
     vaddpd ymm11, ymm11, ymm15
-    vsubpd ymm4, ymm4, ymm14
     vsubpd ymm10, ymm10, ymm15
 
     ; round 6
-    vmovapd ymm12, yword [rel .precisionloss5]
-    vmovapd ymm13, yword [rel .precisionloss11]
-    vaddpd ymm14, ymm5, ymm12
-    vaddpd ymm15, ymm11, ymm13
-    vsubpd ymm14, ymm14, ymm12
-    vsubpd ymm15, ymm15, ymm13
-    vsubpd ymm5, ymm5, ymm14
+    vmovapd ymm14, yword [rel .precisionloss5]
+    vaddpd ymm15, ymm5, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vsubpd ymm5, ymm5, ymm15
+    vaddpd ymm6, ymm6, ymm15
+    vmovapd ymm14, yword [rel .precisionloss11]
+    vaddpd ymm15, ymm11, ymm14
+    vsubpd ymm15, ymm15, ymm14
     vsubpd ymm11, ymm11, ymm15
     vmulpd ymm15, ymm15, yword [rel .reduceconstant]
-    vaddpd ymm6, ymm6, ymm14
     vaddpd ymm0, ymm0, ymm15
 
     ; round 7
-    vmovapd ymm12, yword [rel .precisionloss6]
-    vmovapd ymm13, yword [rel .precisionloss0]
-    vaddpd ymm14, ymm6, ymm12
-    vaddpd ymm15, ymm0, ymm13
-    vsubpd ymm14, ymm14, ymm12
-    vsubpd ymm15, ymm15, ymm13
-    vaddpd ymm7, ymm7, ymm14
+    vmovapd ymm14, yword [rel .precisionloss6]
+    vaddpd ymm15, ymm6, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm7, ymm7, ymm15
+    vsubpd ymm6, ymm6, ymm15
+    vmovapd ymm14, yword [rel .precisionloss0]
+    vaddpd ymm15, ymm0, ymm14
+    vsubpd ymm15, ymm15, ymm14
     vaddpd ymm1, ymm1, ymm15
-    vsubpd ymm6, ymm6, ymm14
     vsubpd ymm0, ymm0, ymm15
 
     ; round 8
-    vmovapd ymm12, yword [rel .precisionloss7]
-    vmovapd ymm13, yword [rel .precisionloss1]
-    vaddpd ymm14, ymm7, ymm12
-    vaddpd ymm15, ymm1, ymm13
-    vsubpd ymm14, ymm14, ymm12
-    vsubpd ymm15, ymm15, ymm13
-    vaddpd ymm8, ymm8, ymm14
+    vmovapd ymm14, yword [rel .precisionloss7]
+    vaddpd ymm15, ymm7, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm8, ymm8, ymm15
+    vsubpd ymm7, ymm7, ymm15
+    vmovapd ymm14, yword [rel .precisionloss1]
+    vaddpd ymm15, ymm1, ymm14
+    vsubpd ymm15, ymm15, ymm14
     vaddpd ymm2, ymm2, ymm15
-    vsubpd ymm7, ymm7, ymm14
     vsubpd ymm1, ymm1, ymm15
 %endmacro
 
