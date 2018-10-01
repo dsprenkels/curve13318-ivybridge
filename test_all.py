@@ -63,6 +63,8 @@ ge_tobytes = ref12.crypto_scalarmult_curve13318_ref12_ge_tobytes
 ge_tobytes.argtypes = [ctypes.c_ubyte * 64, ge_type]
 ge_add = ref12.crypto_scalarmult_curve13318_ref12_ge_add
 ge_add.argtypes = [ge_type] * 3
+ge_add_c = ref12.crypto_scalarmult_curve13318_ref12_ge_add_c
+ge_add_c.argtypes = [ge_type] * 3
 ge_double = ref12.crypto_scalarmult_curve13318_ref12_ge_double
 ge_double.argtypes = [ge_type] * 2
 ge_double_c = ref12.crypto_scalarmult_curve13318_ref12_ge_double_c
@@ -404,21 +406,36 @@ class TestGE(unittest.TestCase):
     @example(0, 1, -1, 0, 0, 1)
     @settings(suppress_health_check=[HealthCheck.filter_too_much])
     def test_add(self, x1, z1, sign1, x2, z2, sign2):
-        (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
-        (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
-        c_point1 = self.encode_point(x1, y1, z1)
-        c_point2 = self.encode_point(x2, y2, z2)
-        c_point3 = ge_type(fe12_type(0))
-        ge_add(c_point3, c_point1, c_point2)
-        x3, y3, z3 = self.decode_point(c_point3)
-        expected = point1 + point2
-        note("Expected: {}".format(expected))
-        note("Actual: ({} : {} : {})".format(x3, y3, z3))
-        if expected == E(0):
-            self.assertEqual(F(z3), 0)
-            return
-        actual = E([F(x3), F(y3), F(z3)])
-        self.assertEqual(actual, expected)
+        self.do_test_add(ge_add)(x1, z1, sign1, x2, z2, sign2)
+
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @example(0, 0, 1, 0, 0, 1)
+    @example(0, 1, 1, 0, 0, 1)
+    @example(0, 1, -1, 0, 0, 1)
+    @settings(suppress_health_check=[HealthCheck.filter_too_much])
+    def test_add_c(self, x1, z1, sign1, x2, z2, sign2):
+        self.do_test_add(ge_add_c)(x1, z1, sign1, x2, z2, sign2)
+
+    def do_test_add(self, fn):
+        def do_test_add_inner(x1, z1, sign1, x2, z2, sign2):
+            (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
+            (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
+            c_point1 = self.encode_point(x1, y1, z1)
+            c_point2 = self.encode_point(x2, y2, z2)
+            c_point3 = ge_type(fe12_type(0))
+            fn(c_point3, c_point1, c_point2)
+            x3, y3, z3 = self.decode_point(c_point3)
+            expected = point1 + point2
+            note("Expected: {}".format(expected))
+            note("Actual: ({} : {} : {})".format(x3, y3, z3))
+            if expected == E(0):
+                self.assertEqual(F(z3), 0)
+                return
+            actual = E([F(x3), F(y3), F(z3)])
+            self.assertEqual(actual, expected)
+        return do_test_add_inner
 
     @example(0, 0, 1)
     @example(0, 1, 1)
@@ -517,7 +534,66 @@ class TestGE(unittest.TestCase):
         z3 = z3 + z3;
         self.assertEqual(E([x3, y3, z3]), 2*point)
 
-    # @unittest.skip('only for debugging')
+    @unittest.skip('only for debugging')
+    @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
+           st.sampled_from([1, -1]),   st.integers(0, 2**256 - 1),
+           st.integers(0, 2**256 - 1), st.sampled_from([1, -1]))
+    @example(0, 0, 1, 0, 0, 1)
+    @example(0, 1, 1, 0, 0, 1)
+    @example(0, 1, -1, 0, 0, 1)
+    @example(5, 26250914708855074711006248540861075732027942443063102939584266239L, 1)
+    @settings(suppress_health_check=[HealthCheck.filter_too_much])
+    def test_add_asmref(self, x1, z1, sign1, x2, z2, sign2):
+        (x1, y1, z1), point1 = make_ge(x1, z1, sign1)
+        (x2, y2, z2), point2 = make_ge(x2, z2, sign2)
+        note("testing: {} + {}".format(point1, point2))
+
+        c_point1 = self.encode_point(x1, y1, z1)
+        c_point2 = self.encode_point(x2, y2, z2)
+        c_point3 = ge_type(fe12_type(0))
+        ge_add(c_point3, c_point1, c_point2)
+        x3_asm, y3_asm, z3_asm = self.decode_point(c_point3)
+        x3_asm, y3_asm, z3_asm = F(x3_asm), F(y3_asm), F(z3_asm)
+
+        note("c_point1: {}".format(list(list(y.hex() for y in x) for x in c_point1)))
+        note("c_point2: {}".format(list(list(y.hex() for y in x) for x in c_point2)))
+        note("c_point3: {}".format(list(list(y.hex() for y in x) for x in c_point3)))
+
+        b = 13318
+
+        x3_ref, y3_ref, z3_ref = 3 * ['nil']
+
+        t0 = x1 * x2;       t1 = y1 * y2;       t2 = z1 * z2
+        t3 = x1 + y1;       t4 = x2 + y2;       t3 = t3 * t4
+        t4 = t0 + t1;       t3 = t3 - t4;       t4 = y1 + z1
+
+        x3 = y2 + z2;       t4 = t4 * x3;       x3 = t1 + t2
+        t4 = t4 - x3;       x3 = x1 + z1;       y3 = x2 + z2
+        x3 = x3 * y3;       y3 = t0 + t2;       y3 = x3 - y3
+
+        z3 =  b * t2;       x3 = y3 - z3;       z3 = x3 + x3
+        x3 = x3 + z3;       z3 = t1 - x3;       x3 = t1 + x3
+        y3 =  b * y3;       t1 = t2 + t2;       t2 = t1 + t2
+
+        y3 = y3 - t2;       y3 = y3 - t0;       t1 = y3 + y3
+        y3 = t1 + y3;       t1 = t0 + t0;       t0 = t1 + t0
+        t0 = t0 - t2;       t1 = t4 * y3;       t2 = t0 * y3
+
+        y3 = x3 * z3;       y3 = y3 + t2;       x3 = x3 * t3
+        x3 = x3 - t1;       z3 = z3 * t4;       t1 = t3 * t0
+        z3 = z3 + t1
+
+        x3_ref = x3
+        y3_ref = y3
+        z3_ref = z3
+
+        note("[x3_asm, y3_asm, z3_asm]: {}".format([x3_asm, y3_asm, z3_asm]))
+        note("[x3_ref, y3_ref, z3_ref]: {}".format([x3_ref, y3_ref, z3_ref]))
+        self.assertEqual(x3_asm, x3_ref)
+        self.assertEqual(y3_asm, y3_ref)
+        self.assertEqual(z3_asm, z3_ref)
+
+    @unittest.skip('only for debugging')
     @given(st.integers(0, 2**256 - 1), st.integers(0, 2**256 - 1),
            st.sampled_from([1, -1]))
     @example(0, 0, 1)
@@ -536,7 +612,6 @@ class TestGE(unittest.TestCase):
         note("c_point: {}".format(list(list(y.hex() for y in x) for x in c_point)))
         note("c_point3: {}".format(list(list(y.hex() for y in x) for x in c_point3)))
 
-        x3, y3, z3 = F(x), F(y), F(z)
         b = 13318
 
         x3_ref, y3_ref, z3_ref = 3 * ['nil']
@@ -565,6 +640,7 @@ class TestGE(unittest.TestCase):
         self.assertEqual(x3_asm, x3_ref)
         self.assertEqual(y3_asm, y3_ref)
         self.assertEqual(z3_asm, z3_ref)
+
 
 class TestScalarmult(unittest.TestCase):
     @staticmethod

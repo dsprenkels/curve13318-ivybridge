@@ -9,12 +9,13 @@ section .rodata:
 
 _bench1_name: db `squeeze_separate_load\0`
 _bench2_name: db `squeeze_immediate_load\0`
+_bench3_name: db `squeeze_noparallel\0`
 align 8, db 0
-_bench_fns_arr: dq bench_squeeze1, bench_squeeze2,
-_bench_names_arr: dq _bench1_name, _bench2_name
+_bench_fns_arr: dq bench_squeeze1, bench_squeeze2, bench_squeeze3
+_bench_names_arr: dq _bench1_name, _bench2_name, _bench3_name
 _bench_fns: dq _bench_fns_arr
 _bench_names: dq _bench_names_arr
-_bench_fns_n: dd 2
+_bench_fns_n: dd 3
 
 section .text:
 
@@ -203,6 +204,109 @@ bench_squeeze2:
     vaddpd ymm8, ymm8, ymm14
     vaddpd ymm2, ymm2, ymm15
     vsubpd ymm7, ymm7, ymm14
+    vsubpd ymm1, ymm1, ymm15
+
+    bench_epilogue
+    ret
+
+bench_squeeze3:
+    bench_prologue
+
+    ; round 1
+    vmovapd ymm14, yword [rel long_precisionloss0]
+    vaddpd ymm15, ymm0, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm1, ymm1, ymm15
+    vsubpd ymm0, ymm0, ymm15
+    vmovapd ymm14, yword [rel long_precisionloss6]
+    vaddpd ymm15, ymm6, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm7, ymm7, ymm15
+    vsubpd ymm6, ymm6, ymm15
+
+    ; round 2
+    vmovapd ymm14, yword [rel long_precisionloss1]
+    vaddpd ymm15, ymm1, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm2, ymm2, ymm15
+    vsubpd ymm1, ymm1, ymm15
+    vmovapd ymm14, yword [rel long_precisionloss7]
+    vaddpd ymm15, ymm7, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm8, ymm8, ymm15
+    vsubpd ymm7, ymm7, ymm15
+
+    ; round 3
+    vmovapd ymm14, yword [rel long_precisionloss2]
+    vaddpd ymm15, ymm2, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm3, ymm3, ymm15
+    vsubpd ymm2, ymm2, ymm15
+    vmovapd ymm14, yword [rel long_precisionloss8]
+    vaddpd ymm15, ymm8, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm9, ymm9, ymm15
+    vsubpd ymm8, ymm8, ymm15
+
+    ; round 4
+    vmovapd ymm14, yword [rel long_precisionloss3]
+    vaddpd ymm15, ymm3, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm4, ymm4, ymm15
+    vsubpd ymm3, ymm3, ymm15
+    vmovapd ymm14, yword [rel long_precisionloss9]
+    vaddpd ymm15, ymm9, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm10, ymm10, ymm15
+    vsubpd ymm9, ymm9, ymm15
+
+    ; round 5
+    vmovapd ymm14, yword [rel long_precisionloss4]
+    vaddpd ymm15, ymm4, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm5, ymm5, ymm15
+    vsubpd ymm4, ymm4, ymm15
+    vmovapd ymm14, yword [rel long_precisionloss10]
+    vaddpd ymm15, ymm10, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm11, ymm11, ymm15
+    vsubpd ymm10, ymm10, ymm15
+
+    ; round 6
+    vmovapd ymm14, yword [rel long_precisionloss5]
+    vaddpd ymm15, ymm5, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vsubpd ymm5, ymm5, ymm15
+    vaddpd ymm6, ymm6, ymm15
+    vmovapd ymm14, yword [rel long_precisionloss11]
+    vaddpd ymm15, ymm11, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vsubpd ymm11, ymm11, ymm15
+    vmulpd ymm15, ymm15, yword [rel long_reduceconstant]
+    vaddpd ymm0, ymm0, ymm15
+
+    ; round 7
+    vmovapd ymm14, yword [rel long_precisionloss6]
+    vaddpd ymm15, ymm6, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm7, ymm7, ymm15
+    vsubpd ymm6, ymm6, ymm15
+    vmovapd ymm14, yword [rel long_precisionloss0]
+    vaddpd ymm15, ymm0, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm1, ymm1, ymm15
+    vsubpd ymm0, ymm0, ymm15
+
+    ; round 8
+    vmovapd ymm14, yword [rel long_precisionloss7]
+    vaddpd ymm14, ymm7, ymm14
+    vsubpd ymm14, ymm14, ymm14
+    vaddpd ymm8, ymm8, ymm14
+    vsubpd ymm7, ymm7, ymm14
+    vmovapd ymm14, yword [rel long_precisionloss1]
+    vaddpd ymm15, ymm1, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vaddpd ymm2, ymm2, ymm15
     vsubpd ymm1, ymm1, ymm15
 
     bench_epilogue

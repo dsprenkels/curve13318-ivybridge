@@ -89,7 +89,7 @@ void ge_tobytes(uint8_t *s, ge p)
     fe10_tobytes(&s[32], y_affine);
 }
 
-void ge_add(ge p3, const ge p1, const ge p2)
+void ge_add_c(ge p3, const ge p1, const ge p2)
 {
     fe12 x1, y1, z1, x2, y2, z2, x3, y3, z3, t0, t1, t2, t3, t4;
     fe12_copy(x1, p1[0]);

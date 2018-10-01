@@ -206,7 +206,7 @@ static void ladderstep(ge q, ge ptable[16], uint8_t bits)
     ge_add(q, q, p);
 }
 
-void ladder(const uint8_t *key, ge q, const ge p)
+static void ladder(const uint8_t *key, ge q, const ge p)
 {
     ge __attribute__((aligned(64))) ptable[16];
     uint8_t w[51], zeroth_window;

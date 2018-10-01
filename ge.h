@@ -18,6 +18,7 @@ typedef fe12 ge[3];
 #define ge_cneg crypto_scalarmult_curve13318_ref12_ge_cneg
 #define ge_frombytes crypto_scalarmult_curve13318_ref12_ge_frombytes
 #define ge_tobytes crypto_scalarmult_curve13318_ref12_ge_tobytes
+#define ge_add_c crypto_scalarmult_curve13318_ref12_ge_add_c
 #define ge_add crypto_scalarmult_curve13318_ref12_ge_add
 #define ge_double crypto_scalarmult_curve13318_ref12_ge_double
 #define ge_double_c crypto_scalarmult_curve13318_ref12_ge_double_c
