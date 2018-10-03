@@ -87,10 +87,11 @@ crypto_scalarmult_curve13318_ref12_ge_add:
         %assign i i+1
     %endrep
 
-    fe12x4_mul t2, t0, t1, scratch                      ; computing [v16, v1, v2, v3] ≤ 1.01 * 2^21
+    fe12x4_mul t2, t0, t1, scratch                  ; computing [v16, v1, v2, v3] ≤ 1.01 * 2^21
 
-    vmovsd xmm15, qword [rel .const_13318]              ; [b]
-    vmovapd ymm14, yword [rel .const_3_3_3_3]           ; [3, 3, 3, 3]
+    vmovsd xmm15, qword [rel .const_13318]          ; [b]
+    vmovapd ymm14, yword [rel .const_3_3_3_3]       ; [3, 3, 3, 3]
+    vxorpd ymm9, ymm9, ymm9                         ; [0, 0, 0, 0]
 
     %assign i 0
     %rep 12
@@ -98,8 +99,8 @@ crypto_scalarmult_curve13318_ref12_ge_add:
         ; so we will need to spill *some*, but not all, registers to the stack.
         %push ge_add_ctx_1
 
-        %if i >= 9
-            %xdefine v16v1v2v3 9
+        %if i >= 8
+            %xdefine v16v1v2v3 8
             vmovapd ymm%[v16v1v2v3], yword [t2 + 32*i]  ; [v16, v1, v2, v3]
         %else
             %xdefine v16v1v2v3 i
@@ -109,25 +110,23 @@ crypto_scalarmult_curve13318_ref12_ge_add:
         vunpckhpd xmm12, xmm%[v16v1v2v3], xmm13         ; [v1, v3]
         vmovddup xmm13, xmm13                           ; [v2, v2]
         vaddpd xmm13, xmm13, xmm12                      ; computing [v7, v12] ≤ 1.01 * 2^22
-        ; TODO(dsprenkels) Take this vxorpd out of this loop
-        vxorpd ymm10, ymm10, ymm10                      ; [0, 0, 0, 0]
-        vinsertf128 ymm10, ymm10, xmm13, 0b1            ; [0, 0, v7, v12]
+        vinsertf128 ymm10, ymm9, xmm13, 0b1             ; [0, 0, v7, v12]
         vmovapd yword [t1 + 32*i], ymm10                ; t1 = [0, 0, v7, v12]
 
         vpermilpd xmm11, xmm12, 0b01                    ; [v3, v1]
         vaddsd xmm10, xmm12, xmm11                      ; computing v17 ≤ 1.01 * 2^22
         vsubsd xmm10, xmm%[v16v1v2v3], xmm10            ; computing v18 ≤ 1.52 * 2^22
-        vmulsd xmm9, xmm11, xmm15                       ; computing v19 ≤ 1.65 * 2^34
-        vsubsd xmm9, xmm10, xmm9                        ; computing v20 ≤ 1.66 * 2^34
+        vmulsd xmm8, xmm11, xmm15                       ; computing v19 ≤ 1.65 * 2^34
+        vsubsd xmm8, xmm10, xmm8                        ; computing v20 ≤ 1.66 * 2^34
         vmulsd xmm10, xmm10, xmm15                      ; computing v25 ≤ 1.24 * 2^36
         vmulsd xmm13, xmm11, xmm14                      ; computing v27 ≤ 1.52 * 2^22
         vsubsd xmm10, xmm10, xmm13                      ; computing v28 ≤ 1.25 * 2^36
         vblendpd xmm11, xmm11, xmm10, 0b01              ; [v28, v1]
         vsubpd xmm12, xmm11, xmm12                      ; computing [v29 ≤ 1.26 * 2^36, v34 ≤ 1.01 * 2^22]
-        vinsertf128 ymm12, ymm9, xmm12, 0b1             ; [v20, ??, v29, v34]
+        vinsertf128 ymm12, ymm8, xmm12, 0b1             ; [v20, ??, v29, v34]
         vmulpd ymm%[v16v1v2v3], ymm12, ymm14            ; computing [v22, ??, v31, v33]
 
-        %if i >= 9
+        %if i >= 8
             vmovapd yword [t5 + 32*i], ymm%[v16v1v2v3]
         %endif
 
@@ -135,9 +134,9 @@ crypto_scalarmult_curve13318_ref12_ge_add:
         %assign i i+1
     %endrep
 
-    %assign i 9
-    %rep 3
-        vmovapd ymm%[i], yword [t5 + 32*i]              ; reload {ymm9-ymm11}
+    %assign i 8
+    %rep 4
+        vmovapd ymm%[i], yword [t5 + 32*i]              ; reload {ymm8-ymm11}
         %assign i i+1
     %endrep
 
