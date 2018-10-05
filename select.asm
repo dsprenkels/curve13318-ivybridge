@@ -26,19 +26,23 @@ crypto_scalarmult_curve13318_ref12_select:
     ;   - {ymm3-ymm5}: Y
     ;   - {ymm6-ymm8}: Z
 
-    ; set the destination registers to zero.
-    vzeroall
-
-    ; conditionally move the neutral element if idx == 31
+    ; conditionally move the first element from ptable (or set to 0)
     xor rax, rax
-    mov rcx, [rel .const_1]
-    cmp sil, 31
-    cmove rax, rcx
-    vmovq xmm3, rax
+    test sil, sil
+    setz al
+    neg rax
+    vmovq xmm15, rax
+    vmovddup xmm15, xmm15
+    vinsertf128 ymm15, xmm15, 0b1
+    %assign j 0
+    %rep 9
+        vandpd ymm%[j], ymm15, yword [rdx + 32*j]
+        %assign j j+1
+    %endrep
 
-    ; conditionally move the elements from ptable
-    %assign i 0
-    %rep 16
+    ; conditionally move the other elements from ptable
+    %assign i 1
+    %rep 15
         xor rax, rax
         cmp sil, i
         sete al
@@ -56,6 +60,15 @@ crypto_scalarmult_curve13318_ref12_select:
 
         %assign i i+1
     %endrep
+
+    ; conditionally move the neutral element if idx == 31
+    xor rax, rax
+    mov rcx, [rel .const_1]
+    cmp sil, 31
+    cmove rax, rcx
+    vxorpd ymm15, ymm15, ymm15
+    vmovq xmm15, rax
+    vorpd ymm3, ymm3, ymm15
 
     ; writeback the field element
     vmovapd [rdi], ymm0
