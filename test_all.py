@@ -70,8 +70,9 @@ ge_double.argtypes = [ge_type] * 2
 ge_double_c = ref12.crypto_scalarmult_curve13318_ref12_ge_double_c
 ge_double_c.argtypes = [ge_type] * 2
 scalarmult = ref12.crypto_scalarmult_curve13318_scalarmult
-scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte * 64];
-
+scalarmult.argtypes = [ctypes.c_ubyte * 64, ctypes.c_ubyte * 32, ctypes.c_ubyte * 64]
+select = ref12.crypto_scalarmult_curve13318_ref12_select
+select.argtypes = [ge_type, ctypes.c_ubyte, ge_type * 16]
 fe12x4_squeeze = ref12.crypto_scalarmult_curve13318_ref12_fe12x4_squeeze
 fe12x4_squeeze.argtypes = [fe12x4_type]
 fe12x4_mul = ref12.crypto_scalarmult_curve13318_ref12_fe12x4_mul_nosqueeze
@@ -693,6 +694,53 @@ class TestScalarmult(unittest.TestCase):
         ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
         self.assertEqual(ret, expected)
 
+    @given(st.integers(-1, 15), st.data())
+    def test_select(self, idx, random_numbers):
+        dest_c = allocate_aligned(ge_type, 32)
+        ptable_c = allocate_aligned(ge_type * 16, 32)
+        for i,_ in enumerate(ptable_c):
+            for j,_ in enumerate(ptable_c[i]):
+                for k,_ in enumerate(ptable_c[i][j]):
+                    ptable_c[i][j][k] = random_numbers.draw(st.integers(0, 2**53-1))
+
+        if idx == -1:
+            # Load neutral element
+            expected = ge_type()
+            expected[1][0] = 1.0
+            idx = 31
+        else:
+            expected = ptable_c[idx]
+        expected = list(list(x) for x in expected)
+
+        select(dest_c, idx, ptable_c)
+        actual = list(list(x) for x in dest_c)
+
+        note('idx = %s' % idx)
+        note('expected: %s' % expected)
+        note('actual: %s' % actual)
+        self.assertEqual(actual, expected)
+
+
+def allocate_aligned(ty, align):
+    """
+    Python does not do any aligned allocations by default. At least, not
+    most of the time. The does not seem to be a good API to force an
+    allocation to be aligned, so this function implements one.
+
+    We allocate the type and wait until its address value is divisible by
+    the desired allocation which will happen if we try long enough.
+    """
+    stashed = []
+    cval = ty()
+    for _ in range(1000):
+        if ctypes.addressof(cval) % align == 0:
+            return cval
+
+        # Try until we have a properly aligned array
+        stashed.append(cval) # save the old one or else Python is going to be smart on us
+        cval = ty()
+    else:
+        raise RuntimeError('failed to allocate an aligned piece of ram')
 
 def make_fe12(limbs=[]):
     """Encode the number in its C representation"""

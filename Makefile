@@ -11,7 +11,8 @@ H_SRCS :=   fe_convert.h \
 ASM_SCRS := fe12_mul.asm \
             fe12_squeeze.asm \
 			ge_double.asm \
-			ge_add.asm
+			ge_add.asm \
+			select.asm
 C_SRCS :=   mxcsr.c \
             fe10.c \
 			fe12_old.c \

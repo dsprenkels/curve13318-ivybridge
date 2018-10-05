@@ -11,6 +11,9 @@
 #include <stdint.h>
 
 #define scalarmult crypto_scalarmult_curve13318_scalarmult
+#define select crypto_scalarmult_curve13318_ref12_select
+
+void select(ge dest, uint8_t idx, const ge ptable[16]);
 
 static inline void ge_zero(ge p)
 {
@@ -51,12 +54,6 @@ void cmov_neutral(ge dest, uint64_t mask)
     dest[1][0] = tmp2.d;
 }
 
-static inline void select(ge dest, uint8_t idx, const ge ptable[16])
-{
-    ge_zero(dest);
-    cmov_neutral(dest, -(int64_t)(idx == 0x1F));
-    for (unsigned int i = 0; i < 16; i++) cmov(dest, ptable[i], -(int64_t)(i == idx));
-}
 
 static void do_precomputation(ge ptable[16], const ge p)
 {
