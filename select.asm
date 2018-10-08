@@ -54,7 +54,7 @@ crypto_scalarmult_curve13318_ref12_select:
         %assign j 0
         %rep 9
             vandpd ymm14, ymm15, yword [rdx + 288*i + 32*j]
-            vorpd ymm%[j], ymm%[j], ymm14
+            vaddpd ymm%[j], ymm%[j], ymm14
             %assign j j+1
         %endrep
 
