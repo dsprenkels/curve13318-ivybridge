@@ -62,3 +62,38 @@ void convert_fe12_to_fe10(fe10 out, const fe12 z)
     out[8] += (z5 & 0x001FFFF) << 9;
     out[9]  = (z5 >> 17);
 }
+
+void convert_fe12_to_fe51(fe51 *out, const fe12 z)
+{
+    const int64_t i0 = (int64_t)  (z[ 0] + z[ 1]);
+    const int64_t i1 = (int64_t) ((z[ 2] + z[ 3]) * 0x1p-43);
+    const int64_t i2 = (int64_t) ((z[ 4] + z[ 5]) * 0x1p-85);
+    const int64_t i3 = (int64_t) ((z[ 6] + z[ 7]) * 0x1p-128);
+    const int64_t i4 = (int64_t) ((z[ 8] + z[ 9]) * 0x1p-170);
+    const int64_t i5 = (int64_t) ((z[10] + z[11]) * 0x1p-213);
+
+    // Because of fe12_squeeze, we know that the limbs are bounded by
+    // [1.01 * 2^44, 1.01 * 2^43, 1.01 * 2^44, 1.01 * 2^43, 1.01 * 2^44, 1.01 * 2^43].
+    // At this point, limbs in z may still be < 0, so we add a large multiple
+    // of p (in this case 8*p) to guarantee that all limbs will be positive.
+    const uint64_t u0 = i0 + 0x1FFFFFFFFF68;
+    const uint64_t u1 = i1 + 0x0FFFFFFFFFFC;
+    const uint64_t u2 = i2 + 0x1FFFFFFFFFFC;
+    const uint64_t u3 = i3 + 0x0FFFFFFFFFFC;
+    const uint64_t u4 = i4 + 0x1FFFFFFFFFFC;
+    const uint64_t u5 = i5 + 0x1FFFFFFFFFFC;
+
+    // Pack the 6 limbs into a 5-limb fe51 array, after this we don't have to
+    // carry anymore.
+    out->v[0]  = u0;
+    out->v[0] += (u1 & 0x00000000000000FF) << 43;
+    out->v[1]  = u1 >> 8;
+    out->v[1] += (u2 & 0x000000000001FFFF) << 34;
+    out->v[2]  = u2 >> 17;
+    out->v[2] += (u3 & 0x0000000001FFFFFF) << 26;
+    out->v[3]  = u3 >> 25;
+    out->v[3] += (u4 & 0x00000003FFFFFFFF) << 17;
+    out->v[4]  = u4 >> 34;
+    out->v[4] += (u5 & 0x000003FFFFFFFFFF) << 9;
+    out->v[0] += 19 * (u5 >> 42);
+}

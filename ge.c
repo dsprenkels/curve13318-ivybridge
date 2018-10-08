@@ -72,21 +72,21 @@ void ge_tobytes(uint8_t *s, ge p)
     `fe10_invert`, `z_inverse` will also be 0. And so, the coordinates that are
     encoded into `s` are 0.
     */
-    fe10 x, y, z, x_affine, y_affine, z_inverse;
+    fe51 x, y, z, x_affine, y_affine, z_inverse;
 
     // Move to fe10, because 4x parallelization is not possible anymore
-    convert_fe12_to_fe10(x, p[0]);
-    convert_fe12_to_fe10(y, p[1]);
-    convert_fe12_to_fe10(z, p[2]);
+    convert_fe12_to_fe51(&x, p[0]);
+    convert_fe12_to_fe51(&y, p[1]);
+    convert_fe12_to_fe51(&z, p[2]);
 
     // Convert to affine coordinates
-    fe10_invert(z_inverse, z);
-    fe10_mul(x_affine, x, z_inverse);
-    fe10_mul(y_affine, y, z_inverse);
+    fe51_invert(&z_inverse, &z);
+    fe51_mul(&x_affine, &x, &z_inverse);
+    fe51_mul(&y_affine, &y, &z_inverse);
 
     // Write the affine numbers to the buffer
-    fe10_tobytes(&s[ 0], x_affine);
-    fe10_tobytes(&s[32], y_affine);
+    fe51_pack(&s[ 0], &x_affine);
+    fe51_pack(&s[32], &y_affine);
 }
 
 void ge_add_c(ge p3, const ge p1, const ge p2)
