@@ -7,7 +7,8 @@ H_SRCS :=   fe_convert.h \
 			fe10.h \
 			fe12.h \
 			ge.h \
-			mxcsr.h
+			mxcsr.h \
+			fe51.h
 ASM_SCRS := fe12_mul.asm \
             fe12_squeeze.asm \
 			ge_double.asm \
@@ -18,10 +19,15 @@ C_SRCS :=   mxcsr.c \
 			fe12_old.c \
 			fe_convert.c \
 			ge.c \
-			scalarmult.c
+			scalarmult.c \
+			fe51_invert.c
+S_SRCS :=   fe51_mul.S \
+			fe51_nsquare.S \
+			fe51_pack.S
 
 ASM_OBJS := $(ASM_SCRS:%.asm=%.o)
 C_OBJS :=   $(C_SRCS:%.c=%.o)
+S_OBJS :=   $(S_SRCS:%.S=%.o)
 
 
 all: libref12.so
@@ -29,7 +35,7 @@ all: libref12.so
 %.o: %.asm
 	$(NASM) -l $(patsubst %.o,%.lst,$@) -o $@ $<
 
-libref12.so: $(ASM_OBJS) $(C_OBJS)
+libref12.so: $(ASM_OBJS) $(C_OBJS) $(S_OBJS)
 	$(CC) $(CFLAGS) -shared -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 .PHONY: check

@@ -28,7 +28,7 @@ ref12 = ctypes.CDLL(os.path.join(os.path.abspath('.'), 'libref12.so'))
 fe12_type = ctypes.c_double * 12
 fe12_frozen_type = ctypes.c_double * 6
 fe10_type = ctypes.c_uint64 * 10
-fe10_frozen_type = ctypes.c_uint64 * 5
+fe51_type = ctypes.c_uint64 * 5
 ge_type = fe12_type * 3
 fe12x4_type = ctypes.c_double * 48
 
@@ -54,9 +54,11 @@ fe10_square.argtypes = [fe10_type, fe10_type]
 fe10_invert = ref12.crypto_scalarmult_curve13318_ref12_fe10_invert
 fe10_invert.argtypes = [fe10_type, fe10_type]
 fe10_reduce = ref12.crypto_scalarmult_curve13318_ref12_fe10_reduce
-fe10_reduce.argtypes = [fe10_frozen_type, fe10_type]
+fe10_reduce.argtypes = [fe51_type, fe10_type]
 convert_fe12_to_fe10 = ref12.crypto_scalarmult_curve13318_ref12_convert_fe12_to_fe10
 convert_fe12_to_fe10.argtypes = [fe10_type, fe12_type]
+convert_fe12_to_fe51 = ref12.crypto_scalarmult_curve13318_ref12_convert_fe12_to_fe51
+convert_fe12_to_fe51.argtypes = [fe51_type, fe12_type]
 ge_frombytes = ref12.crypto_scalarmult_curve13318_ref12_ge_frombytes
 ge_frombytes.argtypes = [ge_type, ctypes.c_ubyte * 64]
 ge_tobytes = ref12.crypto_scalarmult_curve13318_ref12_ge_tobytes
@@ -279,7 +281,7 @@ class TestFE10(unittest.TestCase):
               2**25,     2**26, 2**25, 2**26, 2**25 ])
     def test_reduce(self, limbs):
         z, z_c = make_fe10(limbs)
-        z_frozen = fe10_frozen_type(0)
+        z_frozen = fe51_type(0)
         expected = F(z)
         fe10_reduce(z_frozen, z_c)
         actual = sum(x * 2**(51*i) for i,x in enumerate(z_frozen))
@@ -297,6 +299,16 @@ class TestConvert(unittest.TestCase):
         self.assertEqual(actual, expected)
         for limb in z10_c:
             assert(0 <= limb <= 2**26)
+
+    @given(st_fe12_squeezed_0)
+    def test_convert_fe12_to_fe51(self, limbs):
+        expected, z12_c = make_fe12(limbs)
+        _, z51_c = make_fe51()
+        convert_fe12_to_fe51(z51_c, z12_c)
+        actual = F(fe51_val(z51_c))
+        self.assertEqual(actual, expected)
+        for limb in z51_c:
+            assert(0 <= limb <= 2**52)
 
 class TestGE(unittest.TestCase):
     @staticmethod
@@ -775,7 +787,7 @@ def fe12x4_val(z, lane):
 
 def make_fe10(initial_value=[]):
     z = F(0)
-    z_c = (ctypes.c_uint64 * 10)(0)
+    z_c = fe10_type(0)
     exponent = 0
     for i, limb in enumerate(initial_value):
         z += limb * 2**exponent
@@ -789,6 +801,22 @@ def fe10_val(h):
     for i, limb in enumerate(h):
         val += limb * 2**exponent
         exponent += 26 if i % 2 == 0 else 25
+    return val
+
+def make_fe51(initial_value=[]):
+    z = F(0)
+    z_c = fe51_type(0)
+    exponent = 0
+    for i, limb in enumerate(initial_value):
+        z += limb * 2**(51*i)
+        z_c[i] = limb
+    return z, z_c
+
+def fe51_val(h):
+    val = 0
+    exponent = 0
+    for i, limb in enumerate(h):
+        val += limb * 2**(51*i)
     return val
 
 def make_ge(x, z, sign):
