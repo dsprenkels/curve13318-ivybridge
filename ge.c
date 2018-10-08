@@ -6,9 +6,7 @@ static bool ge_affine_point_on_curve(ge p)
 {
     // Use the general curve equation to check if this point is on the curve
     // y^2 = x^3 - 3*x + 13318
-
-    // FIXME(dsprenkels) Something seems to go wrong with the squaring of y
-    // in this function. Don't know what exactly, maybe look at `fe10_square`?
+    // TODO(dsprenkels) Implement this function using radix-2^51 arithmetic.
     fe10 p0, p1, lhs, rhs, t0;
     fe10_frozen result;
     convert_fe12_to_fe10(p0, p[0]);
