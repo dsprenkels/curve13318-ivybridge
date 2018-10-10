@@ -24,18 +24,18 @@ crypto_scalarmult_curve13318_ref12_fe12x4_mul:
     sub rsp, 640
 
     fe12x4_mul_preload rsi, rdx
-    fe12x4_mul_body rdi, rsi, rdx, (rsp-128)
+    fe12x4_mul_body rdi, rsi, rdx, rsp+128
     fe12x4_mul_reload_C_high rdi
+    fe12x4_squeeze_noload rdi
 
     ; restore stack frame
     mov rsp, rbp
     pop rbp
-
-    ; squeeze the result
-    jmp crypto_scalarmult_curve13318_ref12_fe12x4_squeeze_noload wrt ..plt
+    ret
 
 section .rodata
 fe12x4_mul_consts
+fe12x4_squeeze_consts
 
 section .text
 crypto_scalarmult_curve13318_ref12_fe12x4_mul_nosqueeze:
