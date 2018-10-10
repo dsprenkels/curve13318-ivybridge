@@ -23,7 +23,7 @@
     %pop fe12x4_mul_preload_ctx
 %endmacro
 
-%macro  fe12x4_mul_body 4
+%macro fe12x4_mul_body 4
     ; Multiply two field elements using subtractive karatsuba method: body
     ;
     ; Arguments:
