@@ -21,17 +21,18 @@ _bench4_name: db `ge_double_asm_v2\0`
 _bench5_name: db `ge_double_asm_v3\0`
 _bench6_name: db `ge_double_asm_v4\0`
 _bench7_name: db `ge_double_asm_v5\0`
+_bench8_name: db `ge_double_asm_v6\0`
 
 align 8, db 0
 _bench_fns_arr:
-dq ge_double_asm, ge_double_gcc, ge_double_clang, ge_double_asm_v2, ge_double_asm_v3, ge_double_asm_v4, ge_double_asm_v5
+dq ge_double_asm, ge_double_gcc, ge_double_clang, ge_double_asm_v2, ge_double_asm_v3, ge_double_asm_v4, ge_double_asm_v5, ge_double_asm_v6
 
 _bench_names_arr:
-dq _bench1_name, _bench2_name, _bench3_name, _bench4_name, _bench5_name, _bench6_name, _bench7_name
+dq _bench1_name, _bench2_name, _bench3_name, _bench4_name, _bench5_name, _bench6_name, _bench7_name, _bench8_name
 
 _bench_fns: dq _bench_fns_arr
 _bench_names: dq _bench_names_arr
-_bench_fns_n: dd 7
+_bench_fns_n: dd 8
 
 section .bss
 align 32
@@ -822,6 +823,158 @@ ge_double_asm_v5:
         vmovsd qword [t1 + 32*i], xmm4              ; t1 = [v34, ??, ??, ??]
         vmovsd qword [t1 + 32*i + 8], xmm2          ; t1 = [v34, v12, ??, ??]
         vmovsd qword [t1 + 32*i + 16], xmm3         ; t1 = [v34, v12, v13, ??]
+    %assign i i+1
+    %endrep
+
+    fe12x4_mul_nosave t2, t0, t1, scratch           ; computing [v32, v15, v14, ??] ≤ 1.01 * 2^21
+    %assign i 0
+    %rep 12
+        vpermilpd xmm12, xmm%[i], 0b1               ; v15
+        vextractf128 xmm13, ymm%[i], 0b1            ; v14
+        ; TODO(dsprenkels) Left here, was recomputing bounds; need graph sheet
+        vsubsd xmm12, xmm12, qword [t5 + 32*i]      ; computing v31 : |v31| ≤ 1.01 * 2^22
+        vaddsd xmm13, xmm13, qword [t5 + 32*i + 8]  ; computing v27 : |v27| ≤ 1.01 * 2^22
+        ; save doubled point
+        vmovsd qword [x3 + 8*i], xmm12              ; store x3
+        vmovsd qword [y3 + 8*i], xmm13              ; store y3
+        vmovsd qword [z3 + 8*i], xmm%[i]            ; store z3
+    %assign i i+1
+    %endrep
+
+    %pop ge_double_ctx
+
+    ; restore stack frame
+    mov rsp, rbp
+    pop rbp
+    bench_epilogue
+    ret
+
+section .rodata
+fe12x4_mul_consts
+fe12x4_squeeze_consts
+
+align 32,       db 0
+.const_mulsmall: dq 3.0, 26636.0, -6659.0, -3.0
+align 4,        db 0
+.const_neg3:    dq -3.0
+.const_neg6:    dq -6.0
+.const_8:       dq 8.0
+
+
+ge_double_asm_v6:
+    bench_prologue
+
+    %push ge_double_ctx
+    %xdefine x3          rel scratch_space
+    %xdefine y3          rel scratch_space + 12*8
+    %xdefine z3          rel scratch_space + 24*8
+    %xdefine x           rel scratch_space + 36*8
+    %xdefine y           rel scratch_space + 48*8
+    %xdefine z           rel scratch_space + 60*8
+    %xdefine t0          rsp
+    %xdefine t1          rsp + 1*384
+    %xdefine t2          rsp + 2*384
+    %xdefine t3          rsp + 3*384
+    %xdefine t4          rsp + 4*384
+    %xdefine t5          rsp + 5*384
+    %xdefine v11v34      rsp + 6*384
+    %xdefine old_rdi     rsp + 6*384 + 192
+    %xdefine scratch     rsp + 6*384 + 256
+    %xdefine stack_size  6*384 + 256 + 768
+
+    ; build stack frame
+    push rbp
+    mov rbp, rsp
+    and rsp, -32
+    sub rsp, stack_size
+    mov qword [old_rdi], rdi ; we are going to overwrite this during function calls
+
+    ; assume forall v in {x, y, z} : |v| ≤ 1.01 * 2^22
+    vxorpd xmm15, xmm15, xmm15                      ; [0, 0]
+    %assign i 0
+    %rep 12
+        vbroadcastsd ymm0, qword [x + i*8]          ; [x, x, x, x]
+        vbroadcastsd ymm1, qword [y + i*8]          ; [y, y, y, y]
+        vbroadcastsd ymm2, qword [z + i*8]          ; [z, z, z, z]
+        vblendpd ymm3, ymm0, ymm2, 0b1100           ; [x, x, z, z]
+        vblendpd ymm4, ymm0, ymm2, 0b0110           ; [x, z, z, x]
+        vblendpd ymm4, ymm4, ymm1, 0b1000           ; [x, z, z, y]
+        vmovapd yword [t0 + i*32], ymm3
+        vmovapd yword [t1 + i*32], ymm4
+        ; prepare for second mul
+        vblendpd xmm5, xmm0, xmm1, 0b01             ; [y, x]
+        vblendpd xmm6, xmm15, xmm0, 0b10            ; [0, x]
+        vaddpd xmm5, xmm5, xmm6                     ; [y, 2*x]
+
+        vmovapd oword [t3 + i*32 + 16], xmm1        ; t3 = [??, ??, y, y]
+        vmovapd oword [t4 + i*32 + 16], xmm5        ; t4 = [??, ??, y, 2*x]
+    %assign i i+1
+    %endrep
+
+    fe12x4_mul t2, t0, t1, scratch                  ; computing [v1, v6, v3, v28] ≤ 1.01 * 2^21
+
+    ; t2 is now in ymm{0-11}
+    %assign i 0
+    %rep 12
+        vpermilpd ymm13, ymm%[i], 0b0010            ; [v1, v6, v3, v3]
+        vmulpd ymm%[i], ymm13, [rel .const_mulsmall]; computing [v24, v18, v8, v17]
+                                                    ; |v24| ≤ 1.52 * 2^22
+                                                    ; |v18| ≤ 1.65 * 2^35
+                                                    ; |v8|  ≤ 1.65 * 2^33
+                                                    ; |v17| ≤ 1.52 * 2^22
+        vextractf128 xmm12, ymm%[i], 0b1            ; [v8, v17]
+        vpermilpd xmm13, xmm12, 0b1                 ; [v17, v8]
+        vaddsd xmm14, xmm%[i], xmm13                ; computing v25 : |v25| ≤ 1.52 * 2^23
+        vpermilpd xmm%[i], xmm%[i], 0b1             ; [v18, v24]
+        vaddsd xmm13, xmm%[i], xmm13                ; computing v19 : |v19| ≤ 1.66 * 2^35
+        vmovapd xmm15, oword [t2 + i*32]            ; [v1, v6]
+        vsubsd xmm13, xmm15, xmm13                  ; computing v20 : |v20| ≤ 1.67 * 2^35
+        vmulsd xmm13, xmm13, qword [rel .const_neg3]; computing v22 : |v20| ≤ 1.26 * 2^37
+        vunpcklpd xmm13, xmm13, xmm14               ; [v22, v25]
+        vpermilpd xmm15, xmm15, 0b1                 ; [v6, v1]
+        vaddsd xmm14, xmm12, xmm15                  ; computing v9  : |v9|  ≤ 1.66 * 2^33
+        vmulsd xmm14, xmm14, qword [rel .const_neg6]; computing v11 : |v11| ≤ 1.25 * 2^36
+        vmovsd xmm12, qword [t2 + 32*i + 24]        ; reload v28
+        ; TODO(dsprenkels) Left here, was recomputing bounds; need graph sheet
+        vmulsd xmm12, xmm12, qword [rel .const_8]   ; computing v34 : |v34| ≤ 1.01 * 2^24
+        vunpcklpd xmm12, xmm14, xmm12               ; [v11, v34]
+        vinsertf128 ymm%[i], ymm12, xmm13, 0b1      ; [v11, v34, v22, v25]
+
+    %assign i i+1
+    %endrep
+
+    fe12x4_squeeze_body                             ; squeezing [v11, v34, v22, v25] ≤ 1.01 * 2^21
+
+    %assign i 0
+    %rep 12
+        vmovapd oword [v11v34 + 16*i], xmm%[i]      ; spill [v11, v34]
+        vextractf128 xmm12, ymm%[i], 0b1            ; [v22, v25]
+        vmovddup xmm13, xmm12                       ; [v22, v22]
+        vmovapd oword [t3 + i*32], xmm13            ; t3 = [v22, v22, y, y]
+        vmovsd xmm14, qword [t2 + i*32 + 24]        ; [v28]
+        ; TODO(dsprenkels) We can maybe optimise the next op with a blend from 0,t2 and a vaddpd
+        vaddsd xmm14, xmm14, xmm14                  ; computing v29a : |v29a| ≤ 1.01 * 2^22
+        vblendpd xmm12, xmm12, xmm14, 0b01          ; [v29a, v25]
+        vmovapd oword [t4 + i*32], xmm12            ; t4 = [v29a, v25, y, 2*x]
+
+    %assign i i+1
+    %endrep
+
+    fe12x4_mul t5, t3, t4, scratch                  ; computing [v30, v26, v2, v5] ≤ 1.01 * 2^21
+
+    ; for the third batched multiplication we'll reuse {t0,t1,t2}
+    %assign i 0
+    %rep 12
+        vextractf128 xmm15, ymm%[i], 0b1            ; [v2, v5]
+        vmovapd xmm14, oword [v11v34 + i*16]        ; [v11, v34]
+        vsubsd xmm13, xmm15, xmm14                  ; computing v12 : |v12| ≤ 1.01 * 2^22
+        vaddsd xmm12, xmm15, xmm14                  ; computing v13 : |v13| ≤ 1.01 * 2^22
+        vinsertf128 ymm15, xmm13, 0b1               ; [v2, v5, v12, ??]
+        vmovapd yword [t0 + 32*i], ymm15            ; t0 = [v2, v5, v12, ??]
+        vblendpd xmm14, xmm14, xmm13, 0b01          ; [v12, v34]
+        vpermilpd xmm14, xmm14, 0b01                ; [v34, v12]
+        vmovapd oword [t1 + 32*i], xmm14            ;
+        vmovsd qword [t1 + 32*i + 16], xmm12        ; t1 = [v34, v12, v13, ??]
     %assign i i+1
     %endrep
 
