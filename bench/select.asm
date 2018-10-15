@@ -10,17 +10,18 @@ _bench1_name: db `select_gcc\0`
 _bench2_name: db `select_clang\0`
 _bench3_name: db `select_asm_vorpd\0`
 _bench4_name: db `select_asm_vaddpd\0`
+_bench5_name: db `select_asm_vaddpd_altzero\0`
 
 align 8, db 0
 _bench_fns_arr:
-dq select_gcc, select_clang, select_asm_vorpd, select_asm_vaddpd
+dq select_gcc, select_clang, select_asm_vorpd, select_asm_vaddpd, select_asm_vaddpd_altzero
 
 _bench_names_arr:
-dq _bench1_name, _bench2_name, _bench3_name, _bench4_name
+dq _bench1_name, _bench2_name, _bench3_name, _bench4_name, _bench5_name
 
 _bench_fns: dq _bench_fns_arr
 _bench_names: dq _bench_names_arr
-_bench_fns_n: dd 4
+_bench_fns_n: dd 5
 
 section .bss
 align 32
@@ -329,6 +330,95 @@ select_asm_vaddpd:
     mov rcx, [rel .const_1]
     cmp sil, 31
     cmove rax, rcx
+    vxorpd ymm15, ymm15, ymm15
+    vmovq xmm15, rax
+    vorpd ymm3, ymm3, ymm15
+
+    ; writeback the field element
+    vmovapd [rdi], ymm0
+    vmovapd [rdi + 1*32], ymm1
+    vmovapd [rdi + 2*32], ymm2
+    vmovapd [rdi + 3*32], ymm3
+    vmovapd [rdi + 4*32], ymm4
+    vmovapd [rdi + 5*32], ymm5
+    vmovapd [rdi + 6*32], ymm6
+    vmovapd [rdi + 7*32], ymm7
+    vmovapd [rdi + 8*32], ymm8
+
+    bench_epilogue
+    ret
+
+.rodata:
+.const_1: dq 1.0
+
+section .text:
+select_asm_vaddpd_altzero:
+    bench_prologue
+    lea rdi, [rel scratch_dest]
+    mov rsi, 0x1F
+    lea rdx, [rel scratch_ptable]
+
+    ; select the element from the lookup table at index `idx` and copy the
+    ; element to `dest`.
+    ; C-type: void select(ge dest, uint8_t idx, const ge ptable[16])
+    ;
+    ; Arguments:
+    ;   - rdi: destination buffer
+    ;   - sil: idx (unsigned)
+    ;   - rdx: pointer to the start of the lookup table
+    ;
+    ; Anatomy of this routine:
+    ; For each scan of the lookup table we will need to do one load and one
+    ; vandpd instruction. For borh of these ops, the reciprocal throughput
+    ; is 1.0. We will actually need to do *some* more loads, so we will
+    ; focus on minimising those.
+    ;
+    ; We use the following registers as accumulators:
+    ;   - {ymm0-ymm2}: X
+    ;   - {ymm3-ymm5}: Y
+    ;   - {ymm6-ymm8}: Z
+
+    ; conditionally move the first element from ptable (or set to 0)
+    xor rax, rax
+    test sil, sil
+    setz al
+    neg rax
+    vmovq xmm15, rax
+    vmovddup xmm15, xmm15
+    vinsertf128 ymm15, xmm15, 0b1
+    %assign j 0
+    %rep 9
+        vandpd ymm%[j], ymm15, yword [rdx + 32*j]
+        %assign j j+1
+    %endrep
+
+    ; conditionally move the other elements from ptable
+    %assign i 1
+    %rep 15
+        xor rax, rax
+        cmp sil, i
+        sete al
+        neg rax
+        vmovq xmm15, rax
+        vmovddup xmm15, xmm15
+        vinsertf128 ymm15, xmm15, 0b1
+
+        %assign j 0
+        %rep 9
+            vandpd ymm14, ymm15, yword [rdx + 288*i + 32*j]
+            vaddpd ymm%[j], ymm%[j], ymm14
+            %assign j j+1
+        %endrep
+
+        %assign i i+1
+    %endrep
+
+    ; conditionally move the neutral element if idx == 31
+    xor rax, rax
+    cmp sil, 31
+    sete al
+    neg rax
+    and rax, qword [rel .const_1]
     vxorpd ymm15, ymm15, ymm15
     vmovq xmm15, rax
     vorpd ymm3, ymm3, ymm15

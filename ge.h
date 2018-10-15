@@ -24,6 +24,18 @@ typedef fe12 ge[3];
 #define ge_double_c crypto_scalarmult_curve13318_ref12_ge_double_c
 
 /*
+Write all zeros to p
+*/
+static inline void ge_zero(ge p)
+{
+    for (unsigned int i = 0; i < 3; i++) {
+        for (unsigned int j = 0; j < 12; j++) {
+            p[i][j] = 0;
+        }
+    }
+}
+
+/*
 Write the neutral element (0 : 1 : 0) to point
 */
 static inline void ge_neutral(ge point) {

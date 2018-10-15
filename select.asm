@@ -2,6 +2,8 @@
 ;
 ; Author: Amber Sprenkels <amber@electricdusk.com>
 
+%include "select.mac"
+
 global crypto_scalarmult_curve13318_ref12_select
 
 section .text
@@ -15,60 +17,7 @@ crypto_scalarmult_curve13318_ref12_select:
     ;   - sil: idx (unsigned)
     ;   - rdx: pointer to the start of the lookup table
     ;
-    ; Anatomy of this routine:
-    ; For each scan of the lookup table we will need to do one load and one
-    ; vandpd instruction. For borh of these ops, the reciprocal throughput
-    ; is 1.0. We will actually need to do *some* more loads, so we will
-    ; focus on minimising those.
-    ;
-    ; We use the following registers as accumulators:
-    ;   - {ymm0-ymm2}: X
-    ;   - {ymm3-ymm5}: Y
-    ;   - {ymm6-ymm8}: Z
-
-    ; conditionally move the first element from ptable (or set to 0)
-    xor rax, rax
-    test sil, sil
-    setz al
-    neg rax
-    vmovq xmm15, rax
-    vmovddup xmm15, xmm15
-    vinsertf128 ymm15, xmm15, 0b1
-    %assign j 0
-    %rep 9
-        vandpd ymm%[j], ymm15, yword [rdx + 32*j]
-        %assign j j+1
-    %endrep
-
-    ; conditionally move the other elements from ptable
-    %assign i 1
-    %rep 15
-        xor rax, rax
-        cmp sil, i
-        sete al
-        neg rax
-        vmovq xmm15, rax
-        vmovddup xmm15, xmm15
-        vinsertf128 ymm15, xmm15, 0b1
-
-        %assign j 0
-        %rep 9
-            vandpd ymm14, ymm15, yword [rdx + 288*i + 32*j]
-            vaddpd ymm%[j], ymm%[j], ymm14
-            %assign j j+1
-        %endrep
-
-        %assign i i+1
-    %endrep
-
-    ; conditionally move the neutral element if idx == 31
-    xor rax, rax
-    mov rcx, [rel .const_1]
-    cmp sil, 31
-    cmove rax, rcx
-    vxorpd ymm15, ymm15, ymm15
-    vmovq xmm15, rax
-    vorpd ymm3, ymm3, ymm15
+    select sil, rdx
 
     ; writeback the field element
     vmovapd [rdi], ymm0
@@ -82,5 +31,5 @@ crypto_scalarmult_curve13318_ref12_select:
     vmovapd [rdi + 8*32], ymm8
     ret
 
-.rodata:
-.const_1: dq 1.0
+section .rodata:
+select_consts

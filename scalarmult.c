@@ -12,17 +12,9 @@
 
 #define scalarmult crypto_scalarmult_curve13318_scalarmult
 #define select crypto_scalarmult_curve13318_ref12_select
+#define ladder crypto_scalarmult_curve13318_ref12_ladder
 
-void select(ge dest, uint8_t idx, const ge ptable[16]);
-
-static inline void ge_zero(ge p)
-{
-    for (unsigned int i = 0; i < 3; i++) {
-        for (unsigned int j = 0; j < 12; j++) {
-            p[i][j] = 0;
-        }
-    }
-}
+void crypto_scalarmult_curve13318_ref12_ladder(ge q, const uint8_t *w, const ge ptable[16]);
 
 // Conditionally add an element, assumes dest == {0}
 void cmov(ge dest, const ge src, uint64_t mask)
@@ -75,7 +67,7 @@ static void do_precomputation(ge ptable[16], const ge p)
     ge_double(ptable[15], ptable[7]);
 }
 
-static void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t *e)
+static inline void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t *e)
 {
     // Decode the key bytes into windows and ripple the subtraction carry
     w[50] = e[ 0] & 0x1F;
@@ -182,32 +174,25 @@ static void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t
     *zeroth_window = ((w[0] >> 5) ^ (w[0] >> 4)) & 0x1;
 }
 
-static void ladderstep(ge q, ge ptable[16], uint8_t bits)
+int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
 {
-    ge __attribute__((aligned(64))) p;
-    // Our lookup table is one-based indexed. The neutral element is not stored
-    // in `ptable`, but written by `ge_neutral`. The mapping from `bits` to `idx`
-    // is defined by the following:
-    //
-    // compute_idx :: Word8 -> Word8
-    // compute_idx bits
-    //   |  0 <= bits < 16 = x - 1  // sign is (+)
-    //   | 16 <= bits < 32 = ~x     // sign is (-)
-    const uint8_t sign = (bits >> 4) & 0x01;
-    const uint8_t signmask = -(int8_t)sign;
-    const uint8_t idx = ((~bits & signmask) | ((bits - 1) & ~signmask)) & 0x1F;
-
-    for (int i = 0; i < 5; i++) ge_double(q, q);
-    select(p, idx, ptable);
-    ge_cneg(p, sign);
-    ge_add(q, q, p);
-}
-
-static void ladder(const uint8_t *key, ge q, const ge p)
-{
+    ge __attribute__((aligned(64))) p, __attribute__((aligned(64))) q;
     ge __attribute__((aligned(64))) ptable[16];
+    uint8_t e[32];
     uint8_t w[51], zeroth_window;
 
+    // Prologue: save the MxCsr register state
+    const unsigned int saved_mxcsr = replace_mxcsr();
+
+    for (unsigned int i = 0; i < 32; i++) e[i] = key[i];
+    e[31] &= 0x7F; // We do not use the 255'th bit from the key
+
+    int err = ge_frombytes(p, in);
+    if (err != 0) {
+        return -1;
+    }
+
+    // Prepare for ladder computation
     do_precomputation(ptable, p);
     compute_windows(w, &zeroth_window, key);
 
@@ -215,27 +200,7 @@ static void ladder(const uint8_t *key, ge q, const ge p)
     ge_zero(q);
     cmov_neutral(q, -(int64_t)(zeroth_window == 0));
     cmov(q, ptable[0], -(int64_t)(zeroth_window == 1));
-    for (unsigned int i = 0; i < 51; i++) {
-        ladderstep(q, ptable, w[i]);
-    }
-}
-
-int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
-{
-    ge __attribute__((aligned(64))) p, __attribute__((aligned(64))) q;
-    uint8_t e[32];
-
-    // Prologue: save the MxCsr register state
-    const unsigned int saved_mxcsr = replace_mxcsr();
-
-    for (unsigned int i = 0; i < 32; i++) e[i] = key[i];
-    e[31] &= 127; // We do not use the 255'th bit from the key
-
-    int err = ge_frombytes(p, in);
-    if (err != 0) {
-        return -1;
-    }
-    ladder(e, q, p);
+    crypto_scalarmult_curve13318_ref12_ladder(q, w, ptable);
     ge_tobytes(out, q);
 
     // Epilogue: restore the MxCsr register to its original value
