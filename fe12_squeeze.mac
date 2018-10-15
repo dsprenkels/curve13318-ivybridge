@@ -182,7 +182,7 @@
     .precisionloss9:    times 4 dq 0x3p264
     .precisionloss10:   times 4 dq 0x3p285
     .precisionloss11:   times 4 dq 0x3p306
-    .reduceconstant:     times 4 dq 0x13p-255
+    .reduceconstant:    times 4 dq 0x13p-255
 
 %endmacro
 

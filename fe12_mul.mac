@@ -19,6 +19,8 @@
     vmovapd ymm1, yword [B+32]      ; load B[1]
     vmovapd ymm2, yword [B+64]      ; load B[2]
     vmovapd ymm3, yword [B+96]      ; load B[3]
+    vmovapd ymm4, yword [B+128]     ; load B[4]
+    vmovapd ymm5, yword [B+160]     ; load B[5]
 
     %pop fe12x4_mul_preload_ctx
 %endmacro
@@ -49,9 +51,7 @@
     vmulpd ymm11, ymm6, ymm1        ; l1 := A[0] * B[1]
     vmulpd ymm12, ymm6, ymm2        ; l2 := A[0] * B[2]
     vmulpd ymm13, ymm6, ymm3        ; l3 := A[0] * B[3]
-    vmovapd ymm4, yword [B+128]     ; load B[4]
     vmulpd ymm14, ymm6, ymm4        ; l4 := A[0] * B[4]
-    vmovapd ymm5, yword [B+160]     ; load B[5]
     vmulpd ymm15, ymm6, ymm5        ; l5 := A[0] * B[5]
     ; round 2/6
     vmulpd ymm9, ymm7, ymm0
@@ -488,6 +488,42 @@
     %pop fe12x4_mul_ctx
 %endmacro
 
+%macro fe12x4_mul_nopreload 4
+    ; Multiply two field elements method and squeeze the result
+    ;
+    ; Arguments:
+    ;   - %0:       address to the product of A and B
+    ;   - %1:       two vectorized field element operand A
+    ;   - %2:       two vectorized field element operand B
+    ;   - %3:       address to 768 (24*32) aligned bytes of scratch space
+    ;
+    ; This macro skips the first loads from the inputs. Instead, the following loads are delegated
+    ; to the caller. Note that the values must still be written to RAM. The caller must load the
+    ; following values:
+    ;   - B[0]: ymm0
+    ;   - B[1]: ymm1
+    ;   - B[2]: ymm2
+    ;   - B[3]: ymm3
+    ;   - B[4]: ymm4
+    ;   - B[5]: ymm5
+    ;   - A[0]: ymm6
+    ;   - A[1]: ymm7
+
+
+    %push fe12x4_mul_ctx
+
+    %xdefine C          %1
+    %xdefine A          %2
+    %xdefine B          %3
+    %xdefine scratch    %4
+
+    fe12x4_mul_body C, A, B, scratch
+    fe12x4_mul_reload_C_high C
+    fe12x4_squeeze_noload C
+
+    %pop fe12x4_mul_ctx
+%endmacro
+
 %macro fe12x4_mul_nosqueeze 4
     ; Multiply two field elements method and *do not* squeeze the result
     ;
@@ -542,11 +578,11 @@
     ; you call the other macros in this file, define these values after
     ; your call in the .rodata section.
 
-    align 32, db 0
+    align 32,                        db 0
     .const_unset_bit59_mask: times 4 dq 0xF7FFFFFFFFFFFFFF
-    .const_1_1p_neg128: times 4 dq 0x1p-128
-    .const_1_1p_128: times 4 dq 0x1p+128
-    .const_38: times 4 dq 0x26p0
+    .const_1_1p_neg128:      times 4 dq 0x1p-128
+    .const_1_1p_128:         times 4 dq 0x1p+128
+    .const_38:               times 4 dq 0x26p0
 %endmacro
 
 %endif
