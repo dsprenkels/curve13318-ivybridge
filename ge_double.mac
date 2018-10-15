@@ -1,6 +1,28 @@
 %include "fe12_mul.mac"
 
 %macro ge_double 3
+    ; The next chain of procedures is an adapted version of Algorithm 6
+    ; from the Renes-Costello-Batina addition laws. [Renes2016]
+    ;
+    ; fe12_squeeze guarantees that every processed double is always divisible
+    ; by 2^k and bounded by 1.01 * 2^21 * 2^k, with k the limb's offset
+    ; (0, 22, 43, etc.). This theorem (3.2) is proven in [Hash127] by Daniel
+    ; Bernstein, although it needs to be adapted to this instance.
+    ; Precondition of the theorem is that the input to fe12_squeeze is divisible
+    ; by 2^k and bounded by 0.98 * 2^53 * 2^k.
+    ;
+    ; In other words: Any product limbs produced by fe12_mul (uncarried), must be
+    ; bounded by ±0.98 * 2^53. In fe12_mul, the lowest limb is multiplied by the
+    ; largest value, namely ±(11*19 + 1)*x*y = ±210*x*y for x the largest possible
+    ; 22-bit limbs. This means that the summed limb bits of the 2 multiplied
+    ; operands cannot exceed ±0.98 * 2^53 / 210. Rounded down this computes to
+    ; ~±2^45.2 > ±1.1*2^45. So if we restrict ourselves to a multiplied upper bound
+    ; of ±1.1*2^45, we should be all right.
+    ;
+    ; We would manage this by multiplying 2^21 values with 2^24 values
+    ; (because 21 + 24 ≤ 45), but for example 2^23 * 2^23 is *forbidden* as it
+    ; may overflow (23 + 23 > 45).
+    ;
     %push ge_double_ctx
     %xdefine x3         %1
     %xdefine y3         %1+12*8
@@ -66,6 +88,11 @@
                                                     ; |v18| ≤ 1.65 * 2^35
                                                     ; |v8|  ≤ 1.65 * 2^33
                                                     ; |v17| ≤ 1.52 * 2^22
+        %assign i i+1
+    %endrep
+    %assign i 0
+    %rep 12
+
         vextractf128 xmm12, ymm%[i], 0b01           ; [v8, v17]
         vpermilpd xmm13, xmm12, 0b01                ; [v17, v8]
         vaddsd xmm14, xmm%[i], xmm13                ; computing v25 : |v25| ≤ 1.52 * 2^23
@@ -75,12 +102,11 @@
         vsubsd xmm13, xmm15, xmm13                  ; computing v20 : |v20| ≤ 1.67 * 2^35
         vmulsd xmm13, xmm13, qword [rel .const_neg3]; computing v22 : |v20| ≤ 1.26 * 2^37
         vunpcklpd xmm13, xmm13, xmm14               ; [v22, v25]
-        vpermilpd xmm15, xmm15, 0b01                ; [v6, v1]
+        vmovsd xmm15, qword [t2 + 32*i + 8]         ; reload v6
         vaddsd xmm14, xmm12, xmm15                  ; computing v9  : |v9|  ≤ 1.66 * 2^33
-        vmulsd xmm14, xmm14, qword [rel .const_neg6]; computing v11 : |v11| ≤ 1.25 * 2^36
         vmovsd xmm12, qword [t2 + 32*i + 24]        ; reload v28
-        vmulsd xmm12, xmm12, qword [rel .const_8]   ; computing v34 : |v34| ≤ 1.01 * 2^24
-        vunpcklpd xmm12, xmm14, xmm12               ; [v11, v34]
+        vunpcklpd xmm12, xmm14, xmm12               ; [v9, v28]
+        vmulpd xmm12, xmm12, oword [rel .const_neg6_8] ; computing [v11, v34]
         vinsertf128 ymm%[i], ymm12, xmm13, 0b1      ; [v11, v34, v22, v25]
 
         %assign i i+1
@@ -91,7 +117,6 @@
     %assign i 0
     %rep 12
         %push ge_double_2_ctx
-        ; TODO(dsprenkels) LEFT HERE not reloading t3 and t4
 
         vmovapd oword [v11v34 + 16*i], xmm%[i]      ; spill [v11, v34]
         vextractf128 xmm12, ymm%[i], 0b1            ; [v22, v25]
@@ -145,8 +170,8 @@
 %macro ge_double_consts 0
     align 32, db 0
     .const_mulsmall:    dq 3.0, 26636.0, -6659.0, -3.0
+    align 16, db 0
+    .const_neg6_8:      dq -6.0, 8.0
     align 8, db 0
     .const_neg3:        dq -3.0
-    .const_neg6:        dq -6.0
-    .const_8:           dq 8.0
 %endmacro

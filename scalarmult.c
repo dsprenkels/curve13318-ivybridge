@@ -17,7 +17,7 @@
 void crypto_scalarmult_curve13318_ref12_ladder(ge q, const uint8_t *w, const ge ptable[16]);
 
 // Conditionally add an element, assumes dest == {0}
-void cmov(ge dest, const ge src, uint64_t mask)
+static void cmov(ge dest, const ge src, uint64_t mask)
 {
     for (unsigned int i = 0; i < 3; i++) {
         for (unsigned int j = 0; j < 12; j++) {
@@ -34,7 +34,7 @@ void cmov(ge dest, const ge src, uint64_t mask)
 }
 
 // Conditionally move the neutral element, assumes dest == {0}
-void cmov_neutral(ge dest, uint64_t mask)
+static void cmov_neutral(ge dest, uint64_t mask)
 {
     union limb {
         double d;
@@ -46,7 +46,7 @@ void cmov_neutral(ge dest, uint64_t mask)
     dest[1][0] = tmp2.d;
 }
 
-
+// Do the table precomputation
 static void do_precomputation(ge ptable[16], const ge p)
 {
     ge_copy(ptable[0], p);
@@ -67,9 +67,9 @@ static void do_precomputation(ge ptable[16], const ge p)
     ge_double(ptable[15], ptable[7]);
 }
 
+// Decode the key bytes into windows and ripple the subtraction carry
 static inline void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const uint8_t *e)
 {
-    // Decode the key bytes into windows and ripple the subtraction carry
     w[50] = e[ 0] & 0x1F;
     w[49] = ((e[ 1] << 3) | (e[ 0] >> 5)) & 0x1F;
     w[49] += ((w[50] >> 5) ^ (w[50] >> 4)) & 0x1;
@@ -174,6 +174,7 @@ static inline void compute_windows(uint8_t w[51], uint8_t *zeroth_window, const 
     *zeroth_window = ((w[0] >> 5) ^ (w[0] >> 4)) & 0x1;
 }
 
+// Main secret scalar multiplication
 int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
 {
     ge __attribute__((aligned(64))) p, __attribute__((aligned(64))) q;

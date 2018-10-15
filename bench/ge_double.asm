@@ -914,30 +914,35 @@ ge_double_asm_v6:
     fe12x4_mul t2, t0, t1, scratch                  ; computing [v1, v6, v3, v28] ≤ 1.01 * 2^21
 
     ; t2 is now in ymm{0-11}
+    vmovapd ymm12, [rel .const_mulsmall]
     %assign i 0
     %rep 12
         vpermilpd ymm13, ymm%[i], 0b0010            ; [v1, v6, v3, v3]
-        vmulpd ymm%[i], ymm13, [rel .const_mulsmall]; computing [v24, v18, v8, v17]
+        vmulpd ymm%[i], ymm13, ymm12                ; computing [v24, v18, v8, v17]
                                                     ; |v24| ≤ 1.52 * 2^22
                                                     ; |v18| ≤ 1.65 * 2^35
                                                     ; |v8|  ≤ 1.65 * 2^33
                                                     ; |v17| ≤ 1.52 * 2^22
-        vextractf128 xmm12, ymm%[i], 0b1            ; [v8, v17]
-        vpermilpd xmm13, xmm12, 0b1                 ; [v17, v8]
+    %assign i i+1
+    %endrep
+
+    ; t2 is now in ymm{0-11}
+    %assign i 0
+    %rep 12
+        vextractf128 xmm12, ymm%[i], 0b01           ; [v8, v17]
+        vpermilpd xmm13, xmm12, 0b01                ; [v17, v8]
         vaddsd xmm14, xmm%[i], xmm13                ; computing v25 : |v25| ≤ 1.52 * 2^23
-        vpermilpd xmm%[i], xmm%[i], 0b1             ; [v18, v24]
+        vpermilpd xmm%[i], xmm%[i], 0b01            ; [v18, v24]
         vaddsd xmm13, xmm%[i], xmm13                ; computing v19 : |v19| ≤ 1.66 * 2^35
         vmovapd xmm15, oword [t2 + i*32]            ; [v1, v6]
         vsubsd xmm13, xmm15, xmm13                  ; computing v20 : |v20| ≤ 1.67 * 2^35
         vmulsd xmm13, xmm13, qword [rel .const_neg3]; computing v22 : |v20| ≤ 1.26 * 2^37
         vunpcklpd xmm13, xmm13, xmm14               ; [v22, v25]
-        vpermilpd xmm15, xmm15, 0b1                 ; [v6, v1]
+        vmovsd xmm15, qword [t2 + 32*i + 8]         ; v6
         vaddsd xmm14, xmm12, xmm15                  ; computing v9  : |v9|  ≤ 1.66 * 2^33
-        vmulsd xmm14, xmm14, qword [rel .const_neg6]; computing v11 : |v11| ≤ 1.25 * 2^36
         vmovsd xmm12, qword [t2 + 32*i + 24]        ; reload v28
-        ; TODO(dsprenkels) Left here, was recomputing bounds; need graph sheet
-        vmulsd xmm12, xmm12, qword [rel .const_8]   ; computing v34 : |v34| ≤ 1.01 * 2^24
-        vunpcklpd xmm12, xmm14, xmm12               ; [v11, v34]
+        vunpcklpd xmm12, xmm14, xmm12               ; [v9, v28]
+        vmulpd xmm12, xmm12, oword [rel .const_neg6_8] ; computing [v11, v34]
         vinsertf128 ymm%[i], ymm12, xmm13, 0b1      ; [v11, v34, v22, v25]
 
     %assign i i+1
@@ -952,7 +957,6 @@ ge_double_asm_v6:
         vmovddup xmm13, xmm12                       ; [v22, v22]
         vmovapd oword [t3 + i*32], xmm13            ; t3 = [v22, v22, y, y]
         vmovsd xmm14, qword [t2 + i*32 + 24]        ; [v28]
-        ; TODO(dsprenkels) We can maybe optimise the next op with a blend from 0,t2 and a vaddpd
         vaddsd xmm14, xmm14, xmm14                  ; computing v29a : |v29a| ≤ 1.01 * 2^22
         vblendpd xmm12, xmm12, xmm14, 0b01          ; [v29a, v25]
         vmovapd oword [t4 + i*32], xmm12            ; t4 = [v29a, v25, y, 2*x]
@@ -983,7 +987,6 @@ ge_double_asm_v6:
     %rep 12
         vpermilpd xmm12, xmm%[i], 0b1               ; v15
         vextractf128 xmm13, ymm%[i], 0b1            ; v14
-        ; TODO(dsprenkels) Left here, was recomputing bounds; need graph sheet
         vsubsd xmm12, xmm12, qword [t5 + 32*i]      ; computing v31 : |v31| ≤ 1.01 * 2^22
         vaddsd xmm13, xmm13, qword [t5 + 32*i + 8]  ; computing v27 : |v27| ≤ 1.01 * 2^22
         ; save doubled point
@@ -1007,10 +1010,10 @@ fe12x4_squeeze_consts
 
 align 32,       db 0
 .const_mulsmall: dq 3.0, 26636.0, -6659.0, -3.0
+align 16,       db 0
+.const_neg6_8:  dq -6.0, 8.0
 align 4,        db 0
 .const_neg3:    dq -3.0
-.const_neg6:    dq -6.0
-.const_8:       dq 8.0
 
 
 section .text
