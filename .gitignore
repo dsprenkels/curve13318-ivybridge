@@ -54,3 +54,6 @@ dkms.conf
 
 # Hypothesis example cases
 .hypothesis
+
+# GDB history
+.gdb_history
