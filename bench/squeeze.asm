@@ -10,12 +10,13 @@ section .rodata:
 _bench1_name: db `squeeze_separate_load\0`
 _bench2_name: db `squeeze_immediate_load\0`
 _bench3_name: db `squeeze_noparallel\0`
+_bench4_name: db `carry_sandy2x\0`
 align 8, db 0
-_bench_fns_arr: dq bench_squeeze1, bench_squeeze2, bench_squeeze3
-_bench_names_arr: dq _bench1_name, _bench2_name, _bench3_name
+_bench_fns_arr: dq bench_squeeze1, bench_squeeze2, bench_squeeze3, bench_carry_sandy2x
+_bench_names_arr: dq _bench1_name, _bench2_name, _bench3_name, _bench4_name
 _bench_fns: dq _bench_fns_arr
 _bench_names: dq _bench_names_arr
-_bench_fns_n: dd 3
+_bench_fns_n: dd 4
 
 section .text:
 
@@ -344,3 +345,217 @@ long_precisionloss9: times 4 dq 0x3p264
 long_precisionloss10: times 4 dq 0x3p285
 long_precisionloss11: times 4 dq 0x3p306
 long_reduceconstant: times 4 dq 0x13p-255
+
+section .text:
+
+bench_carry_sandy2x:
+    bench_prologue
+
+    ; qhasm: 2x carry5 = h5 unsigned>>= 25
+    ; asm 1: vpsrlq $25,<h5=reg128#5,>carry5=reg128#4
+    ; asm 2: vpsrlq $25,<h5=%xmm4,>carry5=%xmm3
+    vpsrlq xmm3, xmm4, 25
+
+    ; qhasm: 2x h6 += carry5
+    ; asm 1: paddq <carry5=reg128#4,<h6=reg128#7
+    ; asm 2: paddq <carry5=%xmm3,<h6=%xmm6
+    paddq xmm6, xmm3
+
+    ; qhasm: h5 &= mem128[ m25 ]
+    ; asm 1: pand m25,<h5=reg128#5
+    ; asm 2: pand m25,<h5=%xmm4
+    pand xmm4, [rel m25]
+
+    ; qhasm: 2x carry0 = h0 unsigned>>= 26
+    ; asm 1: vpsrlq $26,<h0=reg128#12,>carry0=reg128#4
+    ; asm 2: vpsrlq $26,<h0=%xmm11,>carry0=%xmm3
+    vpsrlq xmm3, xmm11, 26
+
+    ; qhasm: 2x h1 += carry0
+    ; asm 1: paddq <carry0=reg128#4,<h1=reg128#14
+    ; asm 2: paddq <carry0=%xmm3,<h1=%xmm13
+    paddq xmm13, xmm3
+
+    ; qhasm: h0 &= mem128[ m26 ]
+    ; asm 1: pand m26,<h0=reg128#12
+    ; asm 2: pand m26,<h0=%xmm11
+    pand xmm11, [rel m26]
+
+    ; qhasm: 2x carry6 = h6 unsigned>>= 26
+    ; asm 1: vpsrlq $26,<h6=reg128#7,>carry6=reg128#4
+    ; asm 2: vpsrlq $26,<h6=%xmm6,>carry6=%xmm3
+    vpsrlq xmm3, xmm6, 26
+
+    ; qhasm: 2x h7 += carry6
+    ; asm 1: paddq <carry6=reg128#4,<h7=reg128#6
+    ; asm 2: paddq <carry6=%xmm3,<h7=%xmm5
+    paddq xmm5, xmm3
+
+    ; qhasm: h6 &= mem128[ m26 ]
+    ; asm 1: pand m26,<h6=reg128#7
+    ; asm 2: pand m26,<h6=%xmm6
+    pand xmm6, [rel m26]
+
+    ; qhasm: 2x carry1 = h1 unsigned>>= 25
+    ; asm 1: vpsrlq $25,<h1=reg128#14,>carry1=reg128#4
+    ; asm 2: vpsrlq $25,<h1=%xmm13,>carry1=%xmm3
+    vpsrlq xmm3, xmm13, 25
+
+    ; qhasm: 2x h2 += carry1
+    ; asm 1: paddq <carry1=reg128#4,<h2=reg128#1
+    ; asm 2: paddq <carry1=%xmm3,<h2=%xmm0
+    paddq xmm0, xmm3
+
+    ; qhasm: h1 &= mem128[ m25 ]
+    ; asm 1: pand m25,<h1=reg128#14
+    ; asm 2: pand m25,<h1=%xmm13
+    pand xmm13, [rel m25]
+
+    ; qhasm: 2x carry7 = h7 unsigned>>= 25
+    ; asm 1: vpsrlq $25,<h7=reg128#6,>carry7=reg128#4
+    ; asm 2: vpsrlq $25,<h7=%xmm5,>carry7=%xmm3
+    vpsrlq xmm3, xmm5, 25
+
+    ; qhasm: 2x h8 += carry7
+    ; asm 1: paddq <carry7=reg128#4,<h8=reg128#9
+    ; asm 2: paddq <carry7=%xmm3,<h8=%xmm8
+    paddq xmm8, xmm3
+
+    ; qhasm: h7 &= mem128[ m25 ]
+    ; asm 1: pand m25,<h7=reg128#6
+    ; asm 2: pand m25,<h7=%xmm5
+    pand xmm5, [rel m25]
+
+    ; qhasm: 2x carry2 = h2 unsigned>>= 26
+    ; asm 1: vpsrlq $26,<h2=reg128#1,>carry2=reg128#4
+    ; asm 2: vpsrlq $26,<h2=%xmm0,>carry2=%xmm3
+    vpsrlq xmm3, xmm0, 26
+
+    ; qhasm: 2x h3 += carry2
+    ; asm 1: paddq <carry2=reg128#4,<h3=reg128#3
+    ; asm 2: paddq <carry2=%xmm3,<h3=%xmm2
+    paddq xmm2, xmm3
+
+    ; qhasm: h2 &= mem128[ m26 ]
+    ; asm 1: pand m26,<h2=reg128#1
+    ; asm 2: pand m26,<h2=%xmm0
+    pand xmm0, [rel m26]
+
+    ; qhasm: 2x carry8 = h8 unsigned>>= 26
+    ; asm 1: vpsrlq $26,<h8=reg128#9,>carry8=reg128#4
+    ; asm 2: vpsrlq $26,<h8=%xmm8,>carry8=%xmm3
+    vpsrlq xmm3, xmm8, 26
+
+    ; qhasm: 2x h9 += carry8
+    ; asm 1: paddq <carry8=reg128#4,<h9=reg128#8
+    ; asm 2: paddq <carry8=%xmm3,<h9=%xmm7
+    paddq xmm7, xmm3
+
+    ; qhasm: h8 &= mem128[ m26 ]
+    ; asm 1: pand m26,<h8=reg128#9
+    ; asm 2: pand m26,<h8=%xmm8
+    pand xmm8, [rel m26]
+
+    ; qhasm: 2x carry3 = h3 unsigned>>= 25
+    ; asm 1: vpsrlq $25,<h3=reg128#3,>carry3=reg128#4
+    ; asm 2: vpsrlq $25,<h3=%xmm2,>carry3=%xmm3
+    vpsrlq xmm3, xmm2, 25
+
+    ; qhasm: 2x h4 += carry3
+    ; asm 1: paddq <carry3=reg128#4,<h4=reg128#2
+    ; asm 2: paddq <carry3=%xmm3,<h4=%xmm1
+    paddq xmm1, xmm3
+
+    ; qhasm: h3 &= mem128[ m25 ]
+    ; asm 1: pand m25,<h3=reg128#3
+    ; asm 2: pand m25,<h3=%xmm2
+    pand xmm2, [rel m25]
+
+    ; qhasm: 2x carry9 = h9 unsigned>>= 25
+    ; asm 1: vpsrlq $25,<h9=reg128#8,>carry9=reg128#4
+    ; asm 2: vpsrlq $25,<h9=%xmm7,>carry9=%xmm3
+    vpsrlq xmm3, xmm7, 25
+
+    ; qhasm: 2x r0 = carry9 << 4
+    ; asm 1: vpsllq $4,<carry9=reg128#4,>r0=reg128#10
+    ; asm 2: vpsllq $4,<carry9=%xmm3,>r0=%xmm9
+    vpsllq xmm9, xmm3, 4
+
+    ; qhasm: 2x h0 += carry9
+    ; asm 1: paddq <carry9=reg128#4,<h0=reg128#12
+    ; asm 2: paddq <carry9=%xmm3,<h0=%xmm11
+    paddq xmm11, xmm3
+
+    ; qhasm: 2x carry9 <<= 1
+    ; asm 1: psllq $1,<carry9=reg128#4
+    ; asm 2: psllq $1,<carry9=%xmm3
+    psllq xmm3, 1
+
+    ; qhasm: 2x r0 += carry9
+    ; asm 1: paddq <carry9=reg128#4,<r0=reg128#10
+    ; asm 2: paddq <carry9=%xmm3,<r0=%xmm9
+    paddq xmm9, xmm3
+
+    ; qhasm: 2x h0 += r0
+    ; asm 1: paddq <r0=reg128#10,<h0=reg128#12
+    ; asm 2: paddq <r0=%xmm9,<h0=%xmm11
+    paddq xmm11, xmm9
+
+    ; qhasm: h9 &= mem128[ m25 ]
+    ; asm 1: pand m25,<h9=reg128#8
+    ; asm 2: pand m25,<h9=%xmm7
+    pand xmm7, [rel m25]
+
+    ; qhasm: 2x carry4 = h4 unsigned>>= 26
+    ; asm 1: vpsrlq $26,<h4=reg128#2,>carry4=reg128#4
+    ; asm 2: vpsrlq $26,<h4=%xmm1,>carry4=%xmm3
+    vpsrlq xmm3, xmm1, 26
+
+    ; qhasm: 2x h5 += carry4
+    ; asm 1: paddq <carry4=reg128#4,<h5=reg128#5
+    ; asm 2: paddq <carry4=%xmm3,<h5=%xmm4
+    paddq xmm4, xmm3
+
+    ; qhasm: h4 &= mem128[ m26 ]
+    ; asm 1: pand m26,<h4=reg128#2
+    ; asm 2: pand m26,<h4=%xmm1
+    pand xmm1, [rel m26]
+
+    ; qhasm: 2x carry0 = h0 unsigned>>= 26
+    ; asm 1: vpsrlq $26,<h0=reg128#12,>carry0=reg128#4
+    ; asm 2: vpsrlq $26,<h0=%xmm11,>carry0=%xmm3
+    vpsrlq xmm3, xmm11, 26
+
+    ; qhasm: 2x h1 += carry0
+    ; asm 1: paddq <carry0=reg128#4,<h1=reg128#14
+    ; asm 2: paddq <carry0=%xmm3,<h1=%xmm13
+    paddq xmm13, xmm3
+
+    ; qhasm: h0 &= mem128[ m26 ]
+    ; asm 1: pand m26,<h0=reg128#12
+    ; asm 2: pand m26,<h0=%xmm11
+    pand xmm11, [rel m26]
+
+    ; qhasm: 2x carry5 = h5 unsigned>>= 25
+    ; asm 1: vpsrlq $25,<h5=reg128#5,>carry5=reg128#4
+    ; asm 2: vpsrlq $25,<h5=%xmm4,>carry5=%xmm3
+    vpsrlq xmm3, xmm4, 25
+
+    ; qhasm: 2x h6 += carry5
+    ; asm 1: paddq <carry5=reg128#4,<h6=reg128#7
+    ; asm 2: paddq <carry5=%xmm3,<h6=%xmm6
+    paddq xmm6, xmm3
+
+    ; qhasm: h5 &= mem128[ m25 ]
+    ; asm 1: pand m25,<h5=reg128#5
+    ; asm 2: pand m25,<h5=%xmm4
+    pand xmm4, [rel m25]
+
+    bench_epilogue
+    ret
+
+section .rodata:
+
+align 4, db 0
+m25: dq 33554431, 33554431
+m26: dq 67108863, 67108863
