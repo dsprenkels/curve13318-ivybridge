@@ -8,8 +8,6 @@
 
 global crypto_scalarmult_curve13318_ref12_ladder
 
-extern putchar
-
 section .text
 crypto_scalarmult_curve13318_ref12_ladder:
     ; Double-and-add ladder for shared secret point multiplication

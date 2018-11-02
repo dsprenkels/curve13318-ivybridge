@@ -13,6 +13,7 @@ global _bench_blank, _bench_fns, _bench_names, _bench_fns_n
     push r13
     push r14
     push r15
+    vzeroupper
     rdtsc
     push rax
     push rbp
@@ -28,6 +29,7 @@ global _bench_blank, _bench_fns, _bench_names, _bench_fns_n
     pop rbp
     pop rdx
     sub rax, rdx
+    vzeroupper
     pop r15
     pop r14
     pop r13
