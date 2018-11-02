@@ -10,17 +10,18 @@ _bench1_name: db `fe12_mul_gcc\0`
 _bench2_name: db `fe12_mul_clang\0`
 _bench3_name: db `fe12_mul_asm\0`
 _bench4_name: db `fe12_mul_asm_v2\0`
+_bench5_name: db `fe12_mul_sandy2x\0`
 
 align 8, db 0
 _bench_fns_arr:
-dq fe12_mul_gcc, fe12_mul_clang, fe12_mul_asm, fe12_mul_asm_v2
+dq fe12_mul_gcc, fe12_mul_clang, fe12_mul_asm, fe12_mul_asm_v2, fe12_mul_sandy2x
 
 _bench_names_arr:
-dq _bench1_name, _bench2_name, _bench3_name, _bench4_name
+dq _bench1_name, _bench2_name, _bench3_name, _bench4_name, _bench5_name
 
 _bench_fns: dq _bench_fns_arr
 _bench_names: dq _bench_names_arr
-_bench_fns_n: dd 4
+_bench_fns_n: dd 5
 
 section .bss
 align 32
@@ -1791,3 +1792,272 @@ dq 5183643171103440896 ; double 3.4028236692093846E+38
 dq 5183643171103440896 ; double 3.4028236692093846E+38
 dq 5183643171103440896 ; double 3.4028236692093846E+38
 dq 5183643171103440896 ; double 3.4028236692093846E+38
+
+section .text
+
+fe12_mul_sandy2x:
+    bench_prologue
+    push rbp
+    mov rbp, rsp
+    and rsp, -32
+    sub rsp, 1280
+
+    vpunpckhqdq xmm1, xmm11, [rel scratch_space + 0*16]           ; qhasm: f1 = unpack_high(f0, r)
+    vpunpcklqdq xmm0, xmm11, [rel scratch_space + 0*16]           ; qhasm: f0 = unpack_low(f0, r)
+    vpmuludq xmm11, xmm0, xmm10             ; qhasm: 2x h0 = g0 * f0
+    vpmuludq xmm13, xmm1, xmm10             ; qhasm: 2x h1 = g0 * f1
+    movdqa  oword [rsp + 128], xmm1         ; qhasm: f1_stack = f1
+    paddq xmm1, xmm1                        ; qhasm: 2x f1 += f1
+    vpmuludq xmm14, xmm0, xmm12             ; qhasm: 2x r = g1 * f0
+    movdqa  oword [rsp + 144], xmm0         ; qhasm: f0_stack = f0
+    paddq xmm13, xmm14                      ; qhasm: 2x h1 += r
+    vpmuludq xmm0, xmm1, xmm12              ; qhasm: 2x h2 = g1 * f1
+    movdqa  oword [rsp + 448], xmm1         ; qhasm: f1_2_stack = f1
+    vpunpckhqdq xmm3, xmm1, [rel scratch_space + 1*16]            ; qhasm: f3 = unpack_high(f2, r)
+    vpunpcklqdq xmm1, xmm1, [rel scratch_space + 1*16]            ; qhasm: f2 = unpack_low(f2, r)
+    vpmuludq xmm2, xmm1, xmm10              ; qhasm: 2x r = g0 * f2
+    paddq xmm0, xmm2                        ; qhasm: 2x h2 += r
+    vpmuludq xmm2, xmm3, xmm10              ; qhasm: 2x h3 = g0 * f3
+    movdqa  oword [rsp + 464], xmm3         ; qhasm: f3_stack = f3
+    paddq xmm3, xmm3                        ; qhasm: 2x f3 += f3
+    vpmuludq xmm14, xmm1, xmm12             ; qhasm: 2x r = g1 * f2
+    movdqa  oword [rsp + 480], xmm1         ; qhasm: f2_stack = f2
+    paddq xmm2, xmm14                       ; qhasm: 2x h3 += r
+    vpmuludq xmm1, xmm3, xmm12              ; qhasm: 2x h4 = g1 * f3
+    movdqa  oword [rsp + 496], xmm3         ; qhasm: f3_2_stack = f3
+    vpunpckhqdq xmm5, xmm3, [rel scratch_space + 2*16]            ; qhasm: f5 = unpack_high(f4, r)
+    vpunpcklqdq xmm3, xmm3, [rel scratch_space + 2*16]            ; qhasm: f4 = unpack_low(f4, r)
+    vpmuludq xmm4, xmm3, xmm10              ; qhasm: 2x r = g0 * f4
+    paddq xmm1, xmm4                        ; qhasm: 2x h4 += r
+    vpmuludq xmm4, xmm5, xmm10              ; qhasm: 2x h5 = g0 * f5
+    movdqa  oword [rsp + 512], xmm5         ; qhasm: f5_stack = f5
+    paddq xmm5, xmm5                        ; qhasm: 2x f5 += f5
+    vpmuludq xmm14, xmm3, xmm12             ; qhasm: 2x r = g1 * f4
+    movdqa  oword [rsp + 528], xmm3         ; qhasm: f4_stack = f4
+    paddq xmm4, xmm14                       ; qhasm: 2x h5 += r
+    vpunpckhqdq xmm7, xmm3, [rel scratch_space + 3*16]            ; qhasm: f7 = unpack_high(f6, r)
+    vpunpcklqdq xmm3, xmm3, [rel scratch_space + 3*16]            ; qhasm: f6 = unpack_low(f6, r)
+    vpmuludq xmm6, xmm3, xmm10              ; qhasm: 2x h6 = g0 * f6
+    vpmuludq xmm14, xmm5, xmm12             ; qhasm: 2x r = g1 * f5
+    movdqa  oword [rsp + 544], xmm5         ; qhasm: f5_2_stack = f5
+    pmuludq xmm5, [rel .v19_19]              ; qhasm: 2x f5 *= mem128[ .v19_19 ]
+    movdqa  oword [rsp + 560], xmm5         ; qhasm: f5_38_stack = f5
+    paddq xmm6, xmm14                       ; qhasm: 2x h6 += r
+    vpmuludq xmm5, xmm7, xmm10              ; qhasm: 2x h7 = g0 * f7
+    movdqa  oword [rsp + 576], xmm7         ; qhasm: f7_stack = f7
+    paddq xmm7, xmm7                        ; qhasm: 2x f7 += f7
+    vpmuludq xmm14, xmm3, xmm12             ; qhasm: 2x r = g1 * f6
+    movdqa  oword [rsp + 592], xmm3         ; qhasm: f6_stack = f6
+    paddq xmm5, xmm14                       ; qhasm: 2x h7 += r
+    pmuludq xmm3, [rel .v19_19]              ; qhasm: 2x f6 *= mem128[ .v19_19 ]
+    movdqa  oword [rsp + 608], xmm3         ; qhasm: f6_19_stack = f6
+    vpunpckhqdq xmm9, xmm3, [rel scratch_space + 4*16]            ; qhasm: f9 = unpack_high(f8, r)
+    vpunpcklqdq xmm3, xmm3, [rel scratch_space + 4*16]            ; qhasm: f8 = unpack_low(f8, r)
+    movdqa  oword [rsp + 624], xmm3         ; qhasm: f8_stack = f8
+    vpmuludq xmm8, xmm7, xmm12              ; qhasm: 2x h8 = g1 * f7
+    movdqa  oword [rsp + 640], xmm7         ; qhasm: f7_2_stack = f7
+    pmuludq xmm7, [rel .v19_19]              ; qhasm: 2x f7 *= mem128[ .v19_19 ]
+    movdqa  oword [rsp + 656], xmm7         ; qhasm: f7_38_stack = f7
+    vpmuludq xmm7, xmm3, xmm10              ; qhasm: 2x r = g0 * f8
+    paddq xmm8, xmm7                        ; qhasm: 2x h8 += r
+    vpmuludq xmm7, xmm9, xmm10              ; qhasm: 2x h9 = g0 * f9
+    movdqa  oword [rsp + 672], xmm9         ; qhasm: f9_stack = f9
+    paddq xmm9, xmm9                        ; qhasm: 2x f9 += f9
+    vpmuludq xmm10, xmm3, xmm12             ; qhasm: 2x r = g1 * f8
+    paddq xmm7, xmm10                       ; qhasm: 2x h9 += r
+    pmuludq xmm3, [rel .v19_19]              ; qhasm: 2x f8 *= mem128[ .v19_19 ]
+    movdqa  oword [rsp + 688], xmm3         ; qhasm: f8_19_stack = f8
+    pmuludq xmm12, [rel .v19_19]             ; qhasm: 2x g1 *= mem128[ .v19_19 ]
+    vpmuludq xmm3, xmm9, xmm12              ; qhasm: 2x r = g1 * f9
+    movdqa  oword [rsp + 704], xmm9         ; qhasm: f9_2_stack = f9
+    paddq xmm11, xmm3                       ; qhasm: 2x h0 += r
+    movdqa xmm3, oword [rsp + 0]            ; qhasm: g2 = x3_2
+    movdqa xmm9, oword [rsp + 16]           ; qhasm: g3 = z3_2
+    vpunpckhqdq xmm9, xmm10, [rel scratch_space + 5*16]           ; qhasm: g3 = unpack_high(g2, r)
+    vpunpcklqdq xmm3, xmm10, [rel scratch_space + 5*16]           ; qhasm: g2 = unpack_low(g2, r)
+    vpmuludq xmm10, xmm3, oword [rsp + 144] ; qhasm: 2x r2 = g2 * f0_stack
+    paddq xmm0, xmm10                       ; qhasm: 2x h2 += r2
+    vpmuludq xmm10, xmm3, oword [rsp + 128] ; qhasm: 2x r2 = g2 * f1_stack
+    paddq xmm2, xmm10                       ; qhasm: 2x h3 += r2
+    vpmuludq xmm10, xmm3, oword [rsp + 480] ; qhasm: 2x r2 = g2 * f2_stack
+    paddq xmm1, xmm10                      ; qhasm: 2x h4 += r2    vpmuludq xmm10, xmm3, oword [rsp + 464] ; qhasm: 2x r2 = g2 * f3_stack
+    paddq xmm4, xmm10                       ; qhasm: 2x h5 += r2
+    vpmuludq xmm10, xmm3, oword [rsp + 528] ; qhasm: 2x r2 = g2 * f4_stack
+    paddq xmm6, xmm10                       ; qhasm: 2x h6 += r2
+    vpmuludq xmm10, xmm3, oword [rsp + 512] ; qhasm: 2x r2 = g2 * f5_stack
+    paddq xmm5, xmm10                       ; qhasm: 2x h7 += r2
+    vpmuludq xmm10, xmm3, oword [rsp + 592] ; qhasm: 2x r2 = g2 * f6_stack
+    paddq xmm8, xmm10                       ; qhasm: 2x h8 += r2
+    vpmuludq xmm10, xmm3, oword [rsp + 576] ; qhasm: 2x r2 = g2 * f7_stak
+    paddq xmm7, xmm10                       ; qhasm: 2x h9 += r2
+    pmuludq xmm3, [rel .v19_19]              ; qhasm: 2x g2 *= mem128[ .v19_19 ]
+    vpmuludq xmm10, xmm3, oword [rsp + 624] ; qhasm: 2x r2 = g2 * f8_stack
+    paddq xmm11, xmm10                      ; qhasm: 2x h0 += r2
+    pmuludq xmm3, oword [rsp + 672]         ; qhasm: 2x g2 *= f9_stack
+    paddq xmm13, xmm3                       ; qhasm: 2x h1 += g2
+    vpmuludq xmm3, xmm9,oword [rsp + 144]  ; qhasm: 2x r3 = g3 * f0_stak
+    paddq xmm2, xmm3                        ; qhasm: 2x h3 += r3
+    vpmuludq xmm3, xmm9, oword [rsp + 448]  ; qhasm: 2x r3 = g3 * f1_2_stack
+    paddq xmm1, xmm3                        ; qhasm: 2x h4 += r3
+    vpmuludq xmm3, xmm9, oword [rsp + 480]  ; qhasm: 2x r3 = g3 * f2_stack
+    paddq xmm4, xmm3                        ; qhasm: 2x h5 += r3
+    vpmuludq xmm3, xmm9, oword [rsp + 496]  ; qhasm: 2x r3 = g3 * f3_2_stack
+    paddq xmm6, xmm3                        ; qhasm: 2x h6 += r3
+    vpmuludq xmm3, xmm9, oword [rsp + 528]  ; qhasm: 2x r3 = g3 * f4_stack
+    paddq xmm5, xmm3                       ; qhasm: 2x h7 += r3    vpmuludq xmm3, xmm9, oword [rsp + 544]  ; qhasm: 2x r3 = g3 * f5_2_stack
+    paddq xmm8, xmm3                       ; qhasm: 2x h8 += r3    vpmuludq xmm3, xmm9, oword [rsp + 592]  ; qhasm: 2x r3 = g3 * f6_stack
+    paddq xmm7, xmm3                        ; qhasm: 2x h9 += r3
+    pmuludq xmm9, [rel .v19_19]              ; qhasm: 2x g3 *= mem128[ .v19_19 ]
+    vpmuludq xmm3, xmm9, oword [rsp + 640]  ; qhasm: 2x r3 = g3 * f7_2_stack
+    paddq xmm11, xmm3                       ; qhasm: 2x h0 += r3
+    vpmuludq xmm3, xmm9, oword [rsp + 624]  ; qhasm: 2x r3 = g3 * f8_stack
+    paddq xmm13, xmm3                       ; qhasm: 2x h1 += r3
+    pmuludq xmm9, oword [rsp + 704]         ; qhasm: 2x g3 *= f9_2_stack
+    paddq xmm0, xmm9                        ; qhasm: 2x h2 += g3
+    movdqa xmm3, oword [rsp + 32]           ; qhasm: g4 = x3_4
+    movdqa xmm9, oword [rsp + 80]           ; qhasm: g5 = z3_4
+    vpunpckhqdq xmm9, xmm10, [rel scratch_space + 6*16]           ; qhasm: g5 = unpack_high(g4, r)
+    vpunpcklqdq xmm3, xmm10, [rel scratch_space + 6*16]           ; qhasm: g4 = unpack_low(g4, r)
+    vpmuludq xmm10, xmm3, oword [rsp + 144] ; qhasm: 2x r4 = g4 * f0_stack
+    paddq xmm1, xmm10                       ; qhasm: 2x h4 += r4
+    vpmuludq xmm10, xmm3, oword [rsp + 128] ; qhasm: 2x r4 = g4 * f1_stack
+    paddq xmm4, xmm10                       ; qhasm: 2x h5 += r4
+    vpmuludq xmm10, xmm3, oword [rsp + 480] ; qhasm: 2x r4 = g4 * f2_stack
+    paddq xmm6, xmm10                       ; qhasm: 2x h6 += r4
+    vpmuludq xmm10, xmm3, oword [rsp + 464] ; qhasm: 2x r4 = g4 * f3_stack
+    paddq xmm5, xmm10                       ; qhasm: 2x h7 += r4
+    vpmuludq xmm10, xmm3, oword [rsp + 528] ; qhasm: 2x r4 = g4 * f4_stack
+    paddq xmm8, xmm10                       ; qhasm: 2x h8 += r4
+    vpmuludq xmm10, xmm3, oword [rsp + 512] ; qhasm: 2x r4 = g4 * f5_stak
+    paddq xmm7, xmm10                       ; qhasm: 2x h9 += r4
+    pmuludq xmm3, [rel .v19_19]              ; qhasm: 2x g4 *= mem128[ .v19_19 ]
+    vpmuludq xmm10, xmm3, oword [rsp + 592] ; qhasm: 2x r4 = g4 * f6_stack
+    paddq xmm11, xmm10                      ; qhasm: 2x h0 += r4
+    vpmuludq xmm10, xmm3, oword [rsp + 576] ; qhasm: 2x r4 = g4 * f7_stack
+    paddq xmm13, xmm10                      ; qhasm: 2x h1 += r4
+    vpmuludq xmm10, xmm3, oword [rsp + 624] ; qhasm: 2x r4 = g4 * f8_stack
+    paddq xmm0, xmm10                       ; qhasm: 2x h2 += r4
+    pmuludq xmm3, oword [rsp + 672]         ; qhasm: 2x g4 *= f9_stack
+    paddq xmm2, xmm3                        ; qhasm: 2x h3 += g4
+    vpmuludq xmm3, xmm9, oword [rsp + 144]  ; qhasm: 2x r5 = g5 * f0_stack
+    paddq xmm4, xmm3                        ; qhasm: 2x h5 += r5
+    vpmuludq xmm3, xmm9, oword [rsp + 448]  ; qhasm: 2x r5 = g5 * f1_2_stack
+    paddq xmm6, xmm3                        ; qhasm: 2x h6 += r5
+    vpmuludq xmm3, xmm9, oword [rsp + 480]  ; qhasm: 2x r5 = g5 * f2_stack
+    paddq xmm5, xmm3                        ; qhasm: 2x h7 += r5
+    vpmuludq xmm3, xmm9, oword [rsp + 496]  ; qhasm: 2x r5 = g5 * f3_2_stack
+    paddq xmm8, xmm3                        ; qhasm: 2x h8 += r5
+    vpmuludq xmm3, xmm9,oword [rsp + 528]  ; qhasm: 2x r5 = g5 * f4_stak
+    paddq xmm7, xmm3                        ; qhasm: 2x h9 += r5
+    pmuludq xmm9, [rel .v19_19]              ; qhasm: 2x g5 *= mem128[ .v19_19 ]
+    vpmuludq xmm3, xmm9, oword [rsp + 544]  ; qhasm: 2x r5 = g5 * f5_2_stack
+    paddq xmm11, xmm3                       ; qhasm: 2x h0 += r5
+    vpmuludq xmm3, xmm9, oword [rsp + 592]  ; qhasm: 2x r5 = g5 * f6_stack
+    paddq xmm13, xmm3                       ; qhasm: 2x h1 += r5
+    vpmuludq xmm3, xmm9, oword [rsp + 640]  ; qhasm: 2x r5 = g5 * f7_2_stack
+    paddq xmm0, xmm3                        ; qhasm: 2x h2 += r5
+    vpmuludq xmm3, xmm9, oword [rsp + 624]  ; qhasm: 2x r5 = g5 * f8_stack
+    paddq xmm2, xmm3                        ; qhasm: 2x h3 += r5
+    pmuludq xmm9, oword [rsp + 704]         ; qhasm: 2x g5 *= f9_2_stack
+    paddq xmm1, xmm9                        ; qhasm: 2x h4 += g5
+    movdqa xmm3, oword [rsp + 48]           ; qhasm: g6 = x3_6
+    movdqa xmm9, oword [rsp + 96]           ; qhasm: g7 = z3_6
+    vpunpckhqdq xmm9, xmm10, [rel scratch_space + 7*16]           ; qhasm: g7 = unpack_high(g6, r)
+    vpunpcklqdq xmm3, xmm10, [rel scratch_space + 7*16]           ; qhasm: g6 = unpack_low(g6, r)
+    vpmuludq xmm10, xmm3, oword [rsp + 144] ; qhasm: 2x r6 = g6 * f0_stack
+    paddq xmm6, xmm10                       ; qhasm: 2x h6 += r6
+    vpmuludq xmm10, xmm3, oword [rsp + 128] ; qhasm: 2x r6 = g6 * f1_stack
+    paddq xmm5, xmm10                       ; qhasm: 2x h7 += r6
+    vpmuludq xmm10, xmm3, oword [rsp + 480] ; qhasm: 2x r6 = g6 * f2_stack
+    paddq xmm8, xmm10                       ; qhasm: 2x h8 += r6
+    vpmuludq xmm10, xmm3, oword [rsp + 464] ; qhasm: 2x r6 = g6 * f3_stak
+    paddq xmm7, xmm10                       ; qhasm: 2x h9 += r6
+    pmuludq xmm3, [rel .v19_19]              ; qhasm: 2x g6 *= mem128[ .v19_19 ]
+    vpmuludq xmm10, xmm3, oword [rsp + 528] ; qhasm: 2x r6 = g6 * f4_stack
+    paddq xmm11, xmm10                      ; qhasm: 2x h0 += r6
+    vpmuludq xmm10, xmm3, oword [rsp + 512] ; qhasm: 2x r6 = g6 * f5_stack
+    paddq xmm13, xmm10                      ; qhasm: 2x h1 += r6
+    vpmuludq xmm10, xmm3, oword [rsp + 592] ; qhasm: 2x r6 = g6 * f6_stack
+    paddq xmm0, xmm10                       ; qhasm: 2x h2 += r6
+    vpmuludq xmm10, xmm3, oword [rsp + 576] ; qhasm: 2x r6 = g6 * f7_stack
+    paddq xmm2, xmm10                       ; qhasm: 2x h3 += r6
+    vpmuludq xmm10, xmm3, oword [rsp + 624] ; qhasm: 2x r6 = g6 * f8_stack
+    paddq xmm1, xmm10                       ; qhasm: 2x h4 += r6
+    pmuludq xmm3, oword [rsp + 672]         ; qhasm: 2x g6 *= f9_stack
+    paddq xmm4, xmm3                        ; qhasm: 2x h5 += g6
+    vpmuludq xmm3, xmm9, oword [rsp + 144]  ; qhasm: 2x r7 = g7 * f0_stack
+    paddq xmm5, xmm3                        ; qhasm: 2x h7 += r7
+    vpmuludq xmm3, xmm9, oword [rsp + 448]  ; qhasm: 2x r7 = g7 * f1_2_stack
+    paddq xmm8, xmm3                        ; qhasm: 2x h8 += r7
+    vpmuludq xmm3, xmm9,oword [rsp + 480]  ; qhasm: 2x r7 = g7 * f2_stak
+    paddq xmm7, xmm3                        ; qhasm: 2x h9 += r7
+    pmuludq xmm9, [rel .v19_19]              ; qhasm: 2x g7 *= mem128[ .v19_19 ]
+    vpmuludq xmm3, xmm9, oword [rsp + 496]  ; qhasm: 2x r7 = g7 * f3_2_stack
+    paddq xmm11, xmm3                       ; qhasm: 2x h0 += r7
+    vpmuludq xmm3, xmm9, oword [rsp + 528]  ; qhasm: 2x r7 = g7 * f4_stack
+    paddq xmm13, xmm3                       ; qhasm: 2x h1 += r7
+    vpmuludq xmm3, xmm9, oword [rsp + 544]  ; qhasm: 2x r7 = g7 * f5_2_stack
+    paddq xmm0, xmm3                        ; qhasm: 2x h2 += r7
+    vpmuludq xmm3, xmm9, oword [rsp + 592]  ; qhasm: 2x r7 = g7 * f6_stack
+    paddq xmm2, xmm3                        ; qhasm: 2x h3 += r7
+    vpmuludq xmm3, xmm9, oword [rsp + 640]  ; qhasm: 2x r7 = g7 * f7_2_stack
+    paddq xmm1, xmm3                        ; qhasm: 2x h4 += r7
+    vpmuludq xmm3, xmm9, oword [rsp + 624]  ; qhasm: 2x r7 = g7 * f8_stack
+    paddq xmm4, xmm3                        ; qhasm: 2x h5 += r7
+    pmuludq xmm9, oword [rsp + 704]         ; qhasm: 2x g7 *= f9_2_stack
+    paddq xmm6, xmm9                        ; qhasm: 2x h6 += g7
+    movdqa xmm3, oword [rsp + 64]           ; qhasm: g8 = x3_8
+    movdqa xmm9, oword [rsp + 112]          ; qhasm: g9 = z3_8
+    vpunpckhqdq xmm9, xmm10, [rel scratch_space + 8*16]           ; qhasm: g9 = unpack_high(g8, r)
+    vpunpcklqdq xmm3, xmm10, [rel scratch_space + 8*16]           ; qhasm: g8 = unpack_low(g8, r)
+    vpmuludq xmm10, xmm3, oword [rsp + 144] ; qhasm: 2x r8 = g8 * f0_stack
+    paddq xmm8, xmm10                       ; qhasm: 2x h8 += r8
+    vpmuludq xmm10, xmm3, oword [rsp + 128] ; qhasm: 2x r8 = g8 * f1_stak
+    paddq xmm7, xmm10                       ; qhasm: 2x h9 += r8
+    pmuludq xmm3, [rel .v19_19]              ; qhasm: 2x g8 *= mem128[ .v19_19 ]
+    vpmuludq xmm10, xmm3, oword [rsp + 480] ; qhasm: 2x r8 = g8 * f2_stack
+    paddq xmm11, xmm10                      ; qhasm: 2x h0 += r8
+    vpmuludq xmm10, xmm3, oword [rsp + 464] ; qhasm: 2x r8 = g8 * f3_stack
+    paddq xmm13, xmm10                      ; qhasm: 2x h1 += r8
+    vpmuludq xmm10, xmm3, oword [rsp + 528] ; qhasm: 2x r8 = g8 * f4_stack
+    paddq xmm0, xmm10                       ; qhasm: 2x h2 += r8
+    vpmuludq xmm10, xmm3, oword [rsp + 512] ; qhasm: 2x r8 = g8 * f5_stack
+    paddq xmm2, xmm10                       ; qhasm: 2x h3 += r8
+    vpmuludq xmm10, xmm3, oword [rsp + 592] ; qhasm: 2x r8 = g8 * f6_stack
+    paddq xmm1, xmm10                       ; qhasm: 2x h4 += r8
+    vpmuludq xmm10, xmm3, oword [rsp + 576] ; qhasm: 2x r8 = g8 * f7_stack
+    paddq xmm4, xmm10                       ; qhasm: 2x h5 += r8
+    vpmuludq xmm10, xmm3, oword [rsp + 624] ; qhasm: 2x r8 = g8 * f8_stack
+    paddq xmm6, xmm10                       ; qhasm: 2x h6 += r8
+    pmuludq xmm3, oword [rsp + 672]         ; qhasm: 2x g8 *= f9_stack
+    paddq xmm5, xmm3                        ; qhasm: 2x h7 += g8
+    vpmuludq xmm3, xmm9,oword [rsp + 144]  ; qhasm: 2x r9 = g9 * f0_stak
+    paddq xmm7, xmm3                        ; qhasm: 2x h9 += r9
+    pmuludq xmm9, [rel .v19_19]              ; qhasm: 2x g9 *= mem128[ .v19_19 ]
+    vpmuludq xmm3, xmm9, oword [rsp + 448]  ; qhasm: 2x r9 = g9 * f1_2_stack
+    paddq xmm11, xmm3                       ; qhasm: 2x h0 += r9
+    vpmuludq xmm3, xmm9, oword [rsp + 480]  ; qhasm: 2x r9 = g9 * f2_stack
+    paddq xmm13, xmm3                       ; qhasm: 2x h1 += r9
+    vpmuludq xmm3, xmm9, oword [rsp + 496]  ; qhasm: 2x r9 = g9 * f3_2_stack
+    paddq xmm0, xmm3                        ; qhasm: 2x h2 += r9
+    vpmuludq xmm3, xmm9, oword [rsp + 528]  ; qhasm: 2x r9 = g9 * f4_stack
+    paddq xmm2, xmm3                        ; qhasm: 2x h3 += r9
+    vpmuludq xmm3, xmm9, oword [rsp + 544]  ; qhasm: 2x r9 = g9 * f5_2_stack
+    paddq xmm1, xmm3                        ; qhasm: 2x h4 += r9
+    vpmuludq xmm3, xmm9, oword [rsp + 592]  ; qhasm: 2x r9 = g9 * f6_stack
+    paddq xmm4, xmm3                        ; qhasm: 2x h5 += r9
+    vpmuludq xmm3, xmm9, oword [rsp + 640]  ; qhasm: 2x r9 = g9 * f7_2_stack
+    paddq xmm6, xmm3                        ; qhasm: 2x h6 += r9
+    vpmuludq xmm3, xmm9, oword [rsp + 624]  ; qhasm: 2x r9 = g9 * f8_stack
+    paddq xmm5, xmm3                        ; qhasm: 2x h7 += r9
+    pmuludq xmm9, oword [rsp + 704]         ; qhasm: 2x g9 *= f9_2_stack
+    paddq xmm8, xmm9                        ; qhasm: 2x h8 += g9
+
+    mov rsp, rbp
+    pop rbp
+    bench_epilogue
+    ret
+
+section .rodata:
+align 16, db 0
+.v19_19: dq 19, 19
