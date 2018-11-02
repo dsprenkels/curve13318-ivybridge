@@ -11,17 +11,18 @@ _bench2_name: db `fe12_mul_clang\0`
 _bench3_name: db `fe12_mul_asm\0`
 _bench4_name: db `fe12_mul_asm_v2\0`
 _bench5_name: db `fe12_mul_sandy2x\0`
+_bench6_name: db `fe12_square_sandy2x\0`
 
 align 8, db 0
 _bench_fns_arr:
-dq fe12_mul_gcc, fe12_mul_clang, fe12_mul_asm, fe12_mul_asm_v2, fe12_mul_sandy2x
+dq fe12_mul_gcc, fe12_mul_clang, fe12_mul_asm, fe12_mul_asm_v2, fe12_mul_sandy2x, fe12_square_sandy2x
 
 _bench_names_arr:
-dq _bench1_name, _bench2_name, _bench3_name, _bench4_name, _bench5_name
+dq _bench1_name, _bench2_name, _bench3_name, _bench4_name, _bench5_name, _bench6_name
 
 _bench_fns: dq _bench_fns_arr
 _bench_names: dq _bench_names_arr
-_bench_fns_n: dd 5
+_bench_fns_n: dd 6
 
 section .bss
 align 32
@@ -2061,3 +2062,183 @@ fe12_mul_sandy2x:
 section .rodata:
 align 16, db 0
 .v19_19: dq 19, 19
+
+section .text
+
+fe12_square_sandy2x:
+    bench_prologue
+    push rbp
+    mov rbp, rsp
+    and rsp, -32
+    sub rsp, 1280
+
+    vpunpcklqdq xmm3, xmm13, xmm11          ; qhasm: r = unpack_low(h0, h1)
+    vpunpckhqdq xmm9, xmm13, xmm11          ; qhasm: h1 = unpack_high(h0, h1)
+    paddq xmm3, xmm9                        ; qhasm: 2x r += h1
+    vpunpckhqdq xmm9, xmm3, xmm10           ; qhasm: h1 = unpack_high(h0, r)
+    punpcklqdq xmm10, xmm3                  ; qhasm: unpack low qwords of h0 and r
+    vpmuludq xmm3, xmm10, xmm10             ; qhasm: 2x m0 = h0 * h0
+    paddq xmm10, xmm10                      ; qhasm: 2x h0 += h0
+    vpmuludq xmm11, xmm9, xmm10             ; qhasm: 2x m1 = h0 * h1
+    vpunpcklqdq xmm12, xmm2, xmm0           ; qhasm: r = unpack_low(h2, h3)
+    vpunpckhqdq xmm0, xmm2, xmm0            ; qhasm: h3 = unpack_high(h2, h3)
+    paddq xmm12, xmm0                       ; qhasm: 2x r += h3
+    vpunpckhqdq xmm0, xmm12, xmm2           ; qhasm: h3 = unpack_high(h2, r)
+    punpcklqdq xmm2, xmm12                  ; qhasm: unpack low qwords of h2 and r
+    vpmuludq xmm12, xmm2, xmm10             ; qhasm: 2x m2 = h0 * h2
+    vpaddq xmm13, xmm9, xmm9                ; qhasm: 2x h1_2 = h1 + h1
+    vpmuludq xmm9, xmm13, xmm9              ; qhasm: 2x r = h1 * h1_2
+    paddq xmm12, xmm9                       ; qhasm: 2x m2 += r
+    vpmuludq xmm9, xmm0, xmm10              ; qhasm: 2x m3 = h0 * h3
+    vpmuludq xmm14, xmm2, xmm13             ; qhasm: 2x r = h1_2 * h2
+    paddq xmm9, xmm14                       ; qhasm: 2x m3 += r
+    vpunpcklqdq xmm14, xmm4, xmm1           ; qhasm: r = unpack_low(h4, h5)
+    vpunpckhqdq xmm1, xmm4, xmm1            ; qhasm: h5 = unpack_high(h4, h5)
+    paddq xmm14, xmm1                       ; qhasm: 2x r += h5
+    vpunpckhqdq xmm1, xmm14, xmm4           ; qhasm: h5 = unpack_high(h4, r)
+    punpcklqdq xmm4, xmm14                  ; qhasm: unpack low qwords of h4 and r
+    movdqa oword [rsp + 0], xmm1            ; qhasm: h5_stack = h5
+    paddq xmm1, xmm1                        ; qhasm: 2x h5 += h5
+    movdqa oword [rsp + 16], xmm1           ; qhasm: h5_2_stack = h5
+    pmuludq xmm1, [rel .v19_19]              ; qhasm: 2x h5 *= mem128[ v19_19 ]
+    movdqa oword [rsp + 32], xmm1           ; qhasm: h5_38_stack = h5
+    vpmuludq xmm1, xmm4, xmm10              ; qhasm: 2x m4 = h0 * h4
+    vpmuludq xmm14, xmm2, xmm2              ; qhasm: 2x r = h2 * h2
+    paddq xmm1, xmm14                       ; qhasm: 2x m4 += r
+    vpmuludq xmm10, xmm14, oword [rsp + 0]  ; qhasm: 2x m5 = h0 * h5_stack
+    vpmuludq xmm15, xmm4, xmm13             ; qhasm: 2x r = h1_2 * h4
+    paddq xmm14, xmm15                      ; qhasm: 2x m5 += r
+    vpunpcklqdq xmm15, xmm5, xmm6           ; qhasm: r = unpack_low(h6, h7)
+    vpunpckhqdq xmm5, xmm5, xmm6            ; qhasm: h7 = unpack_high(h6, h7)
+    paddq xmm15, xmm5                       ; qhasm: 2x r += h7
+    vpunpckhqdq xmm5, xmm15, xmm6           ; qhasm: h7 = unpack_high(h6, r)
+    punpcklqdq xmm6, xmm15                  ; qhasm: unpack low qwords of h6 and r
+    movdqa oword [rsp + 48], xmm6           ; qhasm: h6_stack = h6
+    pmuludq xmm6, oword [rel .v19_19]              ; qhasm: 2x h6 *= mem128[ v19_19 ]
+    movdqa oword [rsp + 64], xmm6           ; qhasm: h6_19_stack = h6
+    movdqa oword [rsp + 80], xmm5           ; qhasm: h7_stack = h7
+    pmuludq xmm5, oword [rel .v38_38]              ; qhasm: 2x h7 *= mem128[ v38_38 ]
+    movdqa oword [rsp + 96], xmm5           ; qhasm: h7_38_stack = h7
+    vpmuludq xmm10, xmm5, oword [rsp + 48]  ; qhasm: 2x m6 = h0 * h6_stack
+    vpaddq xmm6, xmm0, xmm0                 ; qhasm: 2x h3_2 = h3 + h3
+    vpmuludq xmm0, xmm6, xmm0               ; qhasm: 2x r = h3 * h3_2
+    paddq xmm5, xmm0                        ; qhasm: 2x m6 += r
+    vpmuludq xmm10, xmm0, oword [rsp + 80]  ; qhasm: 2x m7 = h0 * h7_stack
+    vpmuludq xmm15, xmm4, xmm6              ; qhasm: 2x r = h3_2 * h4
+    paddq xmm0, xmm15                       ; qhasm: 2x m7 += r
+    vpmuludq xmm15, xmm6, xmm13             ; qhasm: 2x r = h1_2 * h3_2
+    paddq xmm1, xmm15                       ; qhasm: 2x m4 += r
+    vpmuludq xmm15, xmm6, xmm2              ; qhasm: 2x r = h2 * h3_2
+    paddq xmm14, xmm15                      ; qhasm: 2x m5 += r
+    vpunpcklqdq xmm15, xmm7, xmm8           ; qhasm: r = unpack_low(h8, h9)
+    vpunpckhqdq xmm7, xmm7, xmm8            ; qhasm: h9 = unpack_high(h8, h9)
+    paddq xmm15, xmm7                       ; qhasm: 2x r += h9
+    vpunpckhqdq xmm7, xmm15, xmm8           ; qhasm: h9 = unpack_high(h8, r)
+    punpcklqdq xmm8, xmm15                  ; qhasm: unpack low qwords of h8 and r
+    movdqa oword [rsp + 112], xmm8          ; qhasm: h8_stack = h8
+    pmuludq xmm8, oword [rel .v19_19]       ; qhasm: 2x h8 *= mem128[ v19_19 ]
+    movdqa oword [rsp + 448], xmm8          ; qhasm: h8_19_stack = h8
+    vpmuludq xmm10, xmm8, oword [rsp + 112] ; qhasm: 2x m8 = h0 * h8_stack
+    vpmuludq xmm10, xmm7, xmm10             ; qhasm: 2x m9 = h0 * h9
+    vpmuludq xmm15, xmm7, oword [rel .v38_38] ; qhasm: 2x h9_38 = h9 * mem128[ v38_38 ]
+    vpmuludq xmm7, xmm15, xmm7              ; qhasm: 2x r = h9 * h9_38
+    paddq xmm8, xmm7                        ; qhasm: 2x m8 += r
+    vpmuludq xmm7, xmm15, xmm13             ; qhasm: 2x r = h1_2 * h9_38
+    paddq xmm3, xmm7                        ; qhasm: 2x m0 += r
+    vpmuludq xmm7, xmm15, xmm2              ; qhasm: 2x r = h2 * h9_38
+    paddq xmm11, xmm7                       ; qhasm: 2x m1 += r
+    vpmuludq xmm13, xmm7, oword [rsp + 80]  ; qhasm: 2x r = h1_2 * h7_stack
+    paddq xmm7, xmm7                        ; qhasm: 2x r += r
+    paddq xmm8, xmm7                        ; qhasm: 2x m8 += r
+    vpmuludq xmm13, xmm7, oword [rsp + 16]  ; qhasm: 2x r = h1_2 * h5_2_stack
+    paddq xmm5, xmm7                        ; qhasm: 2x m6 += r
+    vpmuludq xmm13, xmm7, oword [rsp + 48]  ; qhasm: 2x r = h1_2 * h6_stack
+    paddq xmm0, xmm7                        ; qhasm: 2x m7 += r
+    vpmuludq xmm13, xmm7, oword [rsp + 112] ; qhasm: 2x r = h1_2 * h8_stack
+    paddq xmm10, xmm7                       ; qhasm: 2x m9 += r
+    vpmuludq xmm7, xmm15, xmm6              ; qhasm: 2x r = h3_2 * h9_38
+    paddq xmm12, xmm7                       ; qhasm: 2x m2 += r
+    vpmuludq xmm7, xmm15, xmm4              ; qhasm: 2x r = h4 * h9_38
+    paddq xmm9, xmm7                        ; qhasm: 2x m3 += r
+    vpaddq xmm2, xmm2, xmm2                 ; qhasm: 2x h2_2 = h2 + h2
+    vpmuludq xmm7, xmm4, xmm2               ; qhasm: 2x r = h2_2 * h4
+    paddq xmm5, xmm7                        ; qhasm: 2x m6 += r
+    vpmuludq xmm2, xmm7, oword [rsp + 448]  ; qhasm: 2x r = h2_2 * h8_19_stack
+    paddq xmm3, xmm7                        ; qhasm: 2x m0 += r
+    vpmuludq xmm6, xmm7, oword [rsp + 448]  ; qhasm: 2x r = h3_2 * h8_19_stack
+    paddq xmm11, xmm7                       ; qhasm: 2x m1 += r
+    vpmuludq xmm2, xmm7, oword [rsp + 0]    ; qhasm: 2x r = h2_2 * h5_stack
+    paddq xmm0, xmm7                        ; qhasm: 2x m7 += r
+    vpmuludq xmm2, xmm7, oword [rsp + 48]   ; qhasm: 2x r = h2_2 * h6_stack
+    paddq xmm8, xmm7                        ; qhasm: 2x m8 += r
+    vpmuludq xmm2, xmm2, oword [rsp + 80]   ; qhasm: 2x r = h2_2 * h7_stack
+    paddq xmm10, xmm2                       ; qhasm: 2x m9 += r
+    vpmuludq xmm4, xmm2, oword [rsp + 96]   ; qhasm: 2x r = h4 * h7_38_stack
+    paddq xmm11, xmm2                       ; qhasm: 2x m1 += r
+    vpmuludq xmm2, xmm4, xmm4               ; qhasm: 2x r = h4 * h4
+    paddq xmm8, xmm2                        ; qhasm: 2x m8 += r
+    vpaddq xmm2, xmm4, xmm4                 ; qhasm: 2x h4_2 = h4 + h4
+    vpmuludq xmm2, xmm4, oword [rsp + 448]  ; qhasm: 2x r = h4_2 * h8_19_stack
+    paddq xmm12, xmm4                       ; qhasm: 2x m2 += r
+    vpmuludq xmm15, xmm4, oword [rsp + 16]  ; qhasm: 2x r = h9_38 * h5_2_stack
+    paddq xmm1, xmm4                        ; qhasm: 2x m4 += r
+    vpmuludq xmm15, xmm4, oword [rsp + 48]  ; qhasm: 2x r = h9_38 * h6_stack
+    paddq xmm14, xmm4                       ; qhasm: 2x m5 += r
+    vpmuludq xmm6, xmm4, oword [rsp + 96]   ; qhasm: 2x r = h3_2 * h7_38_stack
+    paddq xmm3, xmm4                        ; qhasm: 2x m0 += r
+    movdqa xmm4, oword [rsp + 16]           ; qhasm: r = h5_2_stack
+    pmuludq xmm4, oword [rsp + 448]         ; qhasm: 2x r *= h8_19_stack
+    paddq xmm9, xmm4                        ; qhasm: 2x m3 += r
+    vpmuludq xmm6, xmm4, oword [rsp + 16]   ; qhasm: 2x r = h3_2 * h5_2_stack
+    paddq xmm8, xmm4                        ; qhasm: 2x m8 += r
+    vpmuludq xmm6, xmm4, oword [rsp + 48]   ; qhasm: 2x r = h3_2 * h6_stack
+    paddq xmm10, xmm4                       ; qhasm: 2x m9 += r
+    vpmuludq xmm15, xmm4, oword [rsp + 80]  ; qhasm: 2x r = h9_38 * h7_stack
+    paddq xmm4, xmm4                        ; qhasm: 2x r += r
+    paddq xmm5, xmm4                        ; qhasm: 2x m6 += r
+    vpmuludq xmm15, xmm4, oword [rsp + 112] ; qhasm: 2x r = h9_38 * h8_stack
+    paddq xmm0, xmm4                        ; qhasm: 2x m7 += r
+    movdqa xmm4, oword [rsp + 48]           ; qhasm: r = h6_stack
+    paddq xmm4, xmm4                        ; qhasm: 2x r += r
+    pmuludq xmm4, oword [rsp + 448]         ; qhasm: 2x r *= h8_19_stack
+    paddq xmm1, xmm4                        ; qhasm: 2x m4 += r
+    movdqa xmm4, oword [rsp + 80]           ; qhasm: r = h7_stack
+    paddq xmm4, xmm4                        ; qhasm: 2x r += r
+    pmuludq xmm4, oword [rsp + 448]         ; qhasm: 2x r *= h8_19_stack
+    paddq xmm14, xmm4                       ; qhasm: 2x m5 += r
+    vpmuludq xmm2, xmm4, oword [rsp + 64]   ; qhasm: 2x r = h4_2 * h6_19_stack
+    paddq xmm3, xmm4                        ; qhasm: 2x m0 += r
+    movdqa xmm4, oword [rsp + 16]           ; qhasm: r = h5_2_stack
+    pmuludq xmm4, oword [rsp + 64]          ; qhasm: 2x r *= h6_19_stack
+    paddq xmm11, xmm4                       ; qhasm: 2x m1 += r
+    movdqa xmm4, oword [rsp + 16]           ; qhasm: r = h5_2_stack
+    pmuludq xmm4, oword [rsp + 96]          ; qhasm: 2x r *= h7_38_stack
+    paddq xmm12, xmm4                       ; qhasm: 2x m2 += r
+    movdqa xmm4, oword [rsp + 48]           ; qhasm: r = h6_stack
+    pmuludq xmm4, oword [rsp + 96]          ; qhasm: 2x r *= h7_38_stack
+    paddq xmm9, xmm4                        ; qhasm: 2x m3 += r
+    vpmuludq xmm2, xmm2, oword [rsp + 0]    ; qhasm: 2x r = h4_2 * h5_stack
+    paddq xmm10, xmm2                       ; qhasm: 2x m9 += r
+    movdqa xmm2, oword [rsp + 32]           ; qhasm: r = h5_38_stack
+    pmuludq xmm2, oword [rsp + 0]           ; qhasm: 2x r *= h5_stack
+    paddq xmm3, xmm2                        ; qhasm: 2x m0 += r
+    movdqa xmm2, oword [rsp + 64]           ; qhasm: r = h6_19_stack
+    pmuludq xmm2, oword [rsp + 48]          ; qhasm: 2x r *= h6_stack
+    paddq xmm12, xmm2                       ; qhasm: 2x m2 += r
+    movdqa xmm2, oword [rsp + 96]           ; qhasm: r = h7_38_stack
+    pmuludq xmm2, oword [rsp + 80]          ; qhasm: 2x r *= h7_stack
+    paddq xmm1, xmm2                        ; qhasm: 2x m4 += r
+    movdqa xmm2, oword [rsp + 448]          ; qhasm: r = h8_19_stack
+    pmuludq xmm2, oword [rsp + 112]         ; qhasm: 2x r *= h8_stack
+    paddq xmm5, xmm2                        ; qhasm: 2x m6 += r
+
+    mov rsp, rbp
+    pop rbp
+    bench_epilogue
+    ret
+
+
+section .rodata:
+align 16, db 0
+.v19_19: dq 19, 19
+.v38_38: dq 38, 38
