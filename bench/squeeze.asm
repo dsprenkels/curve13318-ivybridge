@@ -11,12 +11,13 @@ _bench1_name: db `squeeze_separate_load\0`
 _bench2_name: db `squeeze_immediate_load\0`
 _bench3_name: db `squeeze_noparallel\0`
 _bench4_name: db `carry_sandy2x\0`
+_bench5_name: db `squeeze_triple\0`
 align 8, db 0
-_bench_fns_arr: dq bench_squeeze1, bench_squeeze2, bench_squeeze3, bench_carry_sandy2x
-_bench_names_arr: dq _bench1_name, _bench2_name, _bench3_name, _bench4_name
+_bench_fns_arr: dq bench_squeeze1, bench_squeeze2, bench_squeeze3, bench_carry_sandy2x, bench_squeeze_triple
+_bench_names_arr: dq _bench1_name, _bench2_name, _bench3_name, _bench4_name, _bench5_name
 _bench_fns: dq _bench_fns_arr
 _bench_names: dq _bench_names_arr
-_bench_fns_n: dd 4
+_bench_fns_n: dd 5
 
 section .text:
 
@@ -559,3 +560,89 @@ section .rodata:
 align 4, db 0
 m25: dq 33554431, 33554431
 m26: dq 67108863, 67108863
+
+section .text:
+
+%macro .carrystep 3
+; Arguments:
+;   %1: carry to this register
+;   %2: carry from this register
+;   %3: this label contains the precisionloss value
+vmovapd ymm14, yword [rel %3]
+vaddpd ymm15, %2, ymm14
+vsubpd ymm15, ymm15, ymm14
+vaddpd %1, %1, ymm15
+vsubpd %2, %2, ymm15
+%endmacro
+
+bench_squeeze_triple:
+    ; Interleave three carry chains (5 rounds):
+    ;
+    ;   - a: z[0] -> z[1] ->  z[2] ->  z[3] -> z[4] -> z[5]
+    ;   - b: z[4] -> z[5] ->  z[6] ->  z[7] -> z[8] -> z[9]
+    ;   - c: z[8] -> z[9] -> z[10] -> z[11] -> z[0] -> z[1]
+    ;
+    ; Input:  one vectorized field element (ymm0..ymm11)
+    ; Output: one vectorized field element (ymm0..ymm11)
+    ;
+    ; Precondition:
+    ;   - For all limbs x in z : |x| <= 0.99 * 2^53
+    ;
+    ; Postcondition:
+    ;   - All significands fit in b + 1 bits (b = 22, 21, 21, etc.)
+    ;
+    ; Registers:
+    ;   - ymm0..ymm11:  four input and output field elments
+    ;   - ymm14,ymm14:  large values to force precision loss
+    ;   - ymm14,ymm15:  two temporary registers for t0 and t1
+    bench_prologue
+
+    ; round 1
+    .carrystep ymm1, ymm0, .precisionloss0
+    .carrystep ymm5, ymm4, .precisionloss4
+    .carrystep ymm9, ymm8, .precisionloss8
+
+    ; round 2
+    .carrystep ymm2, ymm1, .precisionloss1
+    .carrystep ymm6, ymm5, .precisionloss5
+    .carrystep ymm10, ymm9, .precisionloss9
+
+    ; round 3
+    .carrystep ymm3, ymm2, .precisionloss2
+    .carrystep ymm7, ymm6, .precisionloss6
+    .carrystep ymm11, ymm10, .precisionloss10
+
+    ; round 4
+    .carrystep ymm4, ymm3, .precisionloss3
+    .carrystep ymm8, ymm7, .precisionloss7
+    vmovapd ymm14, yword [rel .precisionloss11]
+    vaddpd ymm15, ymm11, ymm14
+    vsubpd ymm15, ymm15, ymm14
+    vmovapd ymm14, yword [rel .reduceconstant]
+    vmulpd ymm14, ymm15, ymm14
+    vaddpd ymm0, ymm0, ymm14
+    vsubpd ymm11, ymm11, ymm15
+
+    ; round 5
+    .carrystep ymm5, ymm4, .precisionloss4
+    .carrystep ymm9, ymm8, .precisionloss8
+    .carrystep ymm1, ymm0, .precisionloss0
+
+    bench_epilogue
+    ret
+
+section .rodata:
+align 32, db 0
+.precisionloss0:    times 4 dq 0x3p73
+.precisionloss1:    times 4 dq 0x3p94
+.precisionloss2:    times 4 dq 0x3p115
+.precisionloss3:    times 4 dq 0x3p136
+.precisionloss4:    times 4 dq 0x3p158
+.precisionloss5:    times 4 dq 0x3p179
+.precisionloss6:    times 4 dq 0x3p200
+.precisionloss7:    times 4 dq 0x3p221
+.precisionloss8:    times 4 dq 0x3p243
+.precisionloss9:    times 4 dq 0x3p264
+.precisionloss10:   times 4 dq 0x3p285
+.precisionloss11:   times 4 dq 0x3p306
+.reduceconstant:    times 4 dq 0x13p-255
