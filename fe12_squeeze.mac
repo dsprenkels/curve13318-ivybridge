@@ -21,13 +21,27 @@
     vmovapd ymm11, yword [%1+352]
 %endmacro
 
+%macro .carrystep 3
+; Arguments:
+;   %1: carry to this register
+;   %2: carry from this register
+;   %3: this label contains the precisionloss value
+vmovapd ymm14, yword [rel %3]
+vaddpd ymm15, %2, ymm14
+vsubpd ymm15, ymm15, ymm14
+vaddpd %1, %1, ymm15
+vsubpd %2, %2, ymm15
+%endmacro
+
 %macro fe12x4_squeeze_body 0
-    ; Interleave two carry chains (8 rounds):
-    ;   - a: z[0] -> z[1] -> z[2] -> z[3] -> z[4]  -> z[5]  -> z[6] -> z[7]
-    ;   - b: z[6] -> z[7] -> z[8] -> z[9] -> z[10] -> z[11] -> z[0] -> z[1]
+    ; Interleave three carry chains (6 rounds):
     ;
-    ; Input:  one vectorized field element (ymm0..ymm11) [rdi]
-    ; Output: one vectorized field element (ymm0..ymm11) [rdi]
+    ;   - a: z[0] -> z[1] ->  z[2] ->  z[3] -> z[4] -> z[5]
+    ;   - b: z[4] -> z[5] ->  z[6] ->  z[7] -> z[8] -> z[9]
+    ;   - c: z[8] -> z[9] -> z[10] -> z[11] -> z[0] -> z[1]
+    ;
+    ; Input:  one vectorized field element (ymm0..ymm11)
+    ; Output: one vectorized field element (ymm0..ymm11)
     ;
     ; Precondition:
     ;   - For all limbs x in z : |x| <= 0.99 * 2^53
@@ -40,103 +54,42 @@
     ;   - ymm14,ymm14:  large values to force precision loss
     ;   - ymm14,ymm15:  two temporary registers for t0 and t1
 
-
     ; round 1
-    vmovapd ymm14, yword [rel .precisionloss0]
-    vaddpd ymm15, ymm0, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm1, ymm1, ymm15
-    vsubpd ymm0, ymm0, ymm15
-    vmovapd ymm14, yword [rel .precisionloss6]
-    vaddpd ymm15, ymm6, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm7, ymm7, ymm15
-    vsubpd ymm6, ymm6, ymm15
+    .carrystep ymm1, ymm0, .precisionloss0
+    .carrystep ymm7, ymm6, .precisionloss6
 
     ; round 2
-    vmovapd ymm14, yword [rel .precisionloss1]
-    vaddpd ymm15, ymm1, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm2, ymm2, ymm15
-    vsubpd ymm1, ymm1, ymm15
-    vmovapd ymm14, yword [rel .precisionloss7]
-    vaddpd ymm15, ymm7, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm8, ymm8, ymm15
-    vsubpd ymm7, ymm7, ymm15
+    .carrystep ymm2, ymm1, .precisionloss1
+    .carrystep ymm8, ymm7, .precisionloss7
 
     ; round 3
-    vmovapd ymm14, yword [rel .precisionloss2]
-    vaddpd ymm15, ymm2, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm3, ymm3, ymm15
-    vsubpd ymm2, ymm2, ymm15
-    vmovapd ymm14, yword [rel .precisionloss8]
-    vaddpd ymm15, ymm8, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm9, ymm9, ymm15
-    vsubpd ymm8, ymm8, ymm15
+    .carrystep ymm3, ymm2, .precisionloss2
+    .carrystep ymm9, ymm8, .precisionloss8
 
     ; round 4
-    vmovapd ymm14, yword [rel .precisionloss3]
-    vaddpd ymm15, ymm3, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm4, ymm4, ymm15
-    vsubpd ymm3, ymm3, ymm15
-    vmovapd ymm14, yword [rel .precisionloss9]
-    vaddpd ymm15, ymm9, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm10, ymm10, ymm15
-    vsubpd ymm9, ymm9, ymm15
+    .carrystep ymm4, ymm3, .precisionloss3
+    .carrystep ymm10, ymm9, .precisionloss9
 
     ; round 5
-    vmovapd ymm14, yword [rel .precisionloss4]
-    vaddpd ymm15, ymm4, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm5, ymm5, ymm15
-    vsubpd ymm4, ymm4, ymm15
-    vmovapd ymm14, yword [rel .precisionloss10]
-    vaddpd ymm15, ymm10, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm11, ymm11, ymm15
-    vsubpd ymm10, ymm10, ymm15
+    .carrystep ymm5, ymm4, .precisionloss4
+    .carrystep ymm11, ymm10, .precisionloss10
 
     ; round 6
-    vmovapd ymm14, yword [rel .precisionloss5]
-    vaddpd ymm15, ymm5, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vsubpd ymm5, ymm5, ymm15
-    vaddpd ymm6, ymm6, ymm15
+    .carrystep ymm6, ymm5, .precisionloss5
     vmovapd ymm14, yword [rel .precisionloss11]
     vaddpd ymm15, ymm11, ymm14
     vsubpd ymm15, ymm15, ymm14
+    vmulpd ymm14, ymm15, yword [rel .reduceconstant]
+    vaddpd ymm0, ymm0, ymm14
     vsubpd ymm11, ymm11, ymm15
-    vmulpd ymm15, ymm15, yword [rel .reduceconstant]
-    vaddpd ymm0, ymm0, ymm15
 
     ; round 7
-    vmovapd ymm14, yword [rel .precisionloss6]
-    vaddpd ymm15, ymm6, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm7, ymm7, ymm15
-    vsubpd ymm6, ymm6, ymm15
-    vmovapd ymm14, yword [rel .precisionloss0]
-    vaddpd ymm15, ymm0, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm1, ymm1, ymm15
-    vsubpd ymm0, ymm0, ymm15
+    .carrystep ymm7, ymm6, .precisionloss6
+    .carrystep ymm1, ymm0, .precisionloss0
 
     ; round 8
-    vmovapd ymm14, yword [rel .precisionloss7]
-    vaddpd ymm15, ymm7, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm8, ymm8, ymm15
-    vsubpd ymm7, ymm7, ymm15
-    vmovapd ymm14, yword [rel .precisionloss1]
-    vaddpd ymm15, ymm1, ymm14
-    vsubpd ymm15, ymm15, ymm14
-    vaddpd ymm2, ymm2, ymm15
-    vsubpd ymm1, ymm1, ymm15
+    .carrystep ymm8, ymm7, .precisionloss7
+    .carrystep ymm2, ymm1, .precisionloss1
 %endmacro
 
 %macro fe12x4_squeeze_store 1
