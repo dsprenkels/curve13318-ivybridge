@@ -386,7 +386,7 @@
     ; compute C[{0..5}]
     ; We may be able to do the vandpd optimization here as well, but note
     ; that most pressure comes from vaddpd, not vmulpd. So we will not
-    ; gain anything by optmizing out vmulpd instructions.
+    ; gain that much by optmizing out these vmulpd instructions.
     vmovapd ymm6, yword [rel .const_1_1p_neg128]
     vaddpd ymm10, ymm10, yword [l+192]
     vaddpd ymm10, ymm10, yword [h+192]
@@ -396,19 +396,19 @@
     vaddpd ymm0, ymm10, yword [l]
     vaddpd ymm11, ymm11, yword [l+224]
     vaddpd ymm11, ymm11, yword [h+224]
-    vmulpd ymm11, ymm11, ymm6
+    vandpd ymm11, ymm11, ymm9
     vaddpd ymm11, ymm11, yword [h+32]
     vmulpd ymm11, ymm11, ymm8
     vaddpd ymm1, ymm11, yword [l+32]
     vaddpd ymm12, ymm12, yword [l+256]
     vaddpd ymm12, ymm12, yword [h+256]
-    vmulpd ymm12, ymm12, ymm6
+    vandpd ymm12, ymm12, ymm9
     vaddpd ymm12, ymm12, yword [h+64]
     vmulpd ymm12, ymm12, ymm8
     vaddpd ymm2, ymm12, yword [l+64]
     vaddpd ymm13, ymm13, yword [l+288]
     vaddpd ymm13, ymm13, yword [h+288]
-    vmulpd ymm13, ymm13, ymm6
+    vandpd ymm13, ymm13, ymm9
     vaddpd ymm13, ymm13, yword [h+96]
     vmulpd ymm13, ymm13, ymm8
     vaddpd ymm3, ymm13, yword [l+96]
