@@ -73,7 +73,7 @@
         vblendpd ymm9, ymm9, ymm8, 0b0001           ; [v15, x2, y2, z2]
         vmovapd yword [t1 + 32*i], ymm9             ; t1 = [v15, x2, y2, z2]
 
-        %assign i i+1
+        %assign i (i + 1) % 12
     %endrep
 
     fe12x4_mul t2, t0, t1, scratch                  ; computing [v16, v1, v2, v3] ≤ 1.01 * 2^21
@@ -82,7 +82,7 @@
     vmovapd ymm14, yword [rel .const_3_3_3_3]       ; [3, 3, 3, 3]
     vxorpd ymm9, ymm9, ymm9                         ; [0, 0, 0, 0]
 
-    %assign i 0
+    %assign i 6
     %rep 12
         ; We will need more registers here than we have available in ymm12-ymm15,
         ; so we will need to spill *some*, but not all, registers to the stack.
@@ -120,18 +120,18 @@
         %endif
 
         %pop ge_add_ctx_1
-        %assign i i+1
+        %assign i (i + 1) % 12
     %endrep
 
     %assign i 8
     %rep 4
         vmovapd ymm%[i], yword [t5 + 32*i]              ; reload {ymm8-ymm11}
-        %assign i i+1
+        %assign i (i + 1) % 12
     %endrep
 
     fe12x4_squeeze_body
 
-    %assign i 0
+    %assign i 6
     %rep 12
         vmovapd xmm13, oword [t2 + 32*i + 16]           ; [v2, v3]
         vextractf128 xmm15, ymm%[i], 0b1                ; [v31, v33]
@@ -147,12 +147,12 @@
         vmovapd oword [t0 + 32*i +  0], xmm14           ; t0 = [v24, v33, ??, ??]
         vmovapd oword [t0 + 32*i + 16], xmm15           ; t0 = [v24, v33, v23, v31]
 
-        %assign i i+1
+        %assign i (i + 1) % 12
     %endrep
 
     fe12x4_mul t2, t3, t4, scratch                      ; computing [v37, v36, v6, v11] ≤ 1.01 * 2^21
 
-    %assign i 0
+    %assign i 6
     %rep 12
         vsubpd ymm%[i], ymm%[i], yword [t1 + 32*i]      ; computing [v37, v36, v8, v13] ≤ 1.01 * 2^22
         vpermilpd xmm15, xmm%[i], 0b01                  ; [v36, v37]
@@ -162,12 +162,12 @@
         vpermilpd ymm15, ymm15, 0b1100                  ; [v8, v8, v13, v13]
         vmovapd yword [t1 + 32*i], ymm15                ; t1 = [v8, v8, v13, v13]
 
-        %assign i i+1
+        %assign i (i + 1) % 12
     %endrep
 
     fe12x4_mul t2, t0, t1, scratch                      ; computing [v39, v42, v41, v35] ≤ 1.01 * 2^21
 
-    %assign i 0
+    %assign i 6
     %rep 12
         vextractf128 xmm15, ymm%[i], 0b1                ; [v41, v35]
         vpermilpd xmm14, xmm%[i], 0b01                  ; [v42, v39]
@@ -177,7 +177,7 @@
         vsubsd xmm13, xmm%[i], xmm13                    ; computing v40 ≤ 1.01 * 2^22
         vmovsd qword [x3 + i*8], xmm13                  ; store x3
 
-        %assign i i+1
+        %assign i (i + 1) % 12
     %endrep
     %pop ge_add_ctx
 %endmacro
