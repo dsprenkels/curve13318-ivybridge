@@ -200,7 +200,7 @@ class TestFE12x4(unittest.TestCase):
             # Check theorem 2.4
             assert int(limb) % 2**exponent == 0, (i, hex(int(limb)), exponent)
             exponent += 22 if i % 4 == 0 else 21
-            assert abs(int(limb)) <= 2**(exponent-1), (i, hex(int(limb)), exponent)
+            assert abs(int(limb)) <= 2**(exponent), (i, hex(int(limb)), exponent)
         # Decode the value
         actual = sum(F(int(x)) for x in vz_c[lane::4])
         self.assertEqual(actual, expected)
