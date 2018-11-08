@@ -12,17 +12,18 @@ _bench3_name: db `fe12_mul_asm\0`
 _bench4_name: db `fe12_mul_asm_v2\0`
 _bench5_name: db `fe12_mul_sandy2x\0`
 _bench6_name: db `fe12_square_sandy2x\0`
+_bench7_name: db `fe12_schoolbook_clang\0`
 
 align 8, db 0
 _bench_fns_arr:
-dq fe12_mul_gcc, fe12_mul_clang, fe12_mul_asm, fe12_mul_asm_v2, fe12_mul_sandy2x, fe12_square_sandy2x
+dq fe12_mul_gcc, fe12_mul_clang, fe12_mul_asm, fe12_mul_asm_v2, fe12_mul_sandy2x, fe12_square_sandy2x, fe12_schoolbook_clang
 
 _bench_names_arr:
-dq _bench1_name, _bench2_name, _bench3_name, _bench4_name, _bench5_name, _bench6_name
+dq _bench1_name, _bench2_name, _bench3_name, _bench4_name, _bench5_name, _bench6_name, _bench7_name
 
 _bench_fns: dq _bench_fns_arr
 _bench_names: dq _bench_names_arr
-_bench_fns_n: dd 6
+_bench_fns_n: dd 7
 
 section .bss
 align 32
@@ -2237,8 +2238,495 @@ fe12_square_sandy2x:
     bench_epilogue
     ret
 
-
 section .rodata:
 align 16, db 0
 .v19_19: dq 19, 19
 .v38_38: dq 38, 38
+
+section .text:
+
+fe12_schoolbook_clang:
+    bench_prologue
+    push rbp
+    mov rbp, rsp
+    and rsp, -32
+    sub rsp, 1280
+    lea rdx, [rel scratch_space]
+    lea rsi, [rel scratch_space + 384]
+    lea rdx, [rel scratch_space + 768]
+
+    vmovapd ymm0, yword [rdx]
+    vmovapd ymm11, yword [rdx + 32]
+    vmovapd ymm6, yword [rdx + 64]
+    vmovapd yword [rsp + 512], ymm6
+    vmovapd ymm3, yword [rdx + 96]
+    vmovapd ymm8, yword [rdx + 128]
+    vmovapd ymm14, yword [rdx + 352]
+    vmulpd  ymm1, ymm14, yword [rel .const_19p_neg255]
+    vmovapd ymm13, yword [rsi]
+    vmovapd ymm7, yword [rsi + 32]
+    vmulpd  ymm9, ymm13, ymm0
+    vmulpd  ymm10, ymm11, ymm13
+    vmovapd ymm2, ymm11
+    vmovapd yword [rsp + 576], ymm11
+    vmulpd  ymm5, ymm6, ymm13
+    vmulpd  ymm12, ymm3, ymm13
+    vmovapd yword [rsp + 288], ymm3
+    vmulpd  ymm4, ymm8, ymm13
+    vmovapd yword [rsp + 416], ymm4
+    vmulpd  ymm15, ymm1, ymm7
+    vmovapd ymm4, ymm1
+    vmovapd yword [rsp + 640], ymm1
+    vaddpd  ymm15, ymm9, ymm15
+    vmulpd  ymm9, ymm0, ymm7
+    vmovapd ymm11, ymm0
+    vmovapd yword [rsp + 608], ymm0
+    vaddpd  ymm0, ymm10, ymm9
+    vmovapd yword [rsp + 320], ymm0
+    vmulpd  ymm9, ymm2, ymm7
+    vaddpd  ymm0, ymm5, ymm9
+    vmovapd yword [rsp + 544], ymm0
+    vmulpd  ymm9, ymm6, ymm7
+    vaddpd  ymm0, ymm12, ymm9
+    vmovapd yword [rsp + 352], ymm0
+    vmulpd  ymm9, ymm3, ymm7
+    vaddpd  ymm0, ymm9, yword [rsp + 416]
+    vmovapd yword [rsp + 224], ymm0
+    vmovapd ymm0, yword [rdx + 160]
+    vmulpd  ymm9, ymm0, ymm13
+    vmulpd  ymm10, ymm8, ymm7
+    vaddpd  ymm1, ymm9, ymm10
+    vmovapd yword [rsp + 128], ymm1
+    vmovapd ymm1, yword [rdx + 192]
+    vmovapd yword [rsp + 448], ymm1
+    vmulpd  ymm9, ymm1, ymm13
+    vmulpd  ymm10, ymm0, ymm7
+    vmovapd ymm12, ymm0
+    vmovapd yword [rsp + 384], ymm0
+    vaddpd  ymm0, ymm9, ymm10
+    vmovapd yword [rsp + 32], ymm0
+    vmovapd ymm10, yword [rdx + 224]
+    vmulpd  ymm9, ymm10, ymm13
+    vmulpd  ymm0, ymm1, ymm7
+    vaddpd  ymm0, ymm9, ymm0
+    vmovapd yword [rsp + 192], ymm0
+    vmovapd ymm9, yword [rdx + 256]
+    vmulpd  ymm0, ymm9, ymm13
+    vmulpd  ymm1, ymm10, ymm7
+    vaddpd  ymm0, ymm0, ymm1
+    vmovapd yword [rsp], ymm0
+    vmovapd ymm1, yword [rdx + 288]
+    vmulpd  ymm0, ymm1, ymm13
+    vmulpd  ymm2, ymm9, ymm7
+    vaddpd  ymm0, ymm0, ymm2
+    vmovapd yword [rsp + 96], ymm0
+    vmulpd  ymm2, ymm14, ymm13
+    vmovapd ymm5, yword [rdx + 320]
+    vmulpd  ymm13, ymm5, ymm13
+    vmulpd  ymm0, ymm1, ymm7
+    vaddpd  ymm0, ymm13, ymm0
+    vmulpd  ymm7, ymm5, ymm7
+    vaddpd  ymm2, ymm2, ymm7
+    vmovapd yword [rsp + 64], ymm2
+    vmovapd ymm3, yword [rel .const_19p_neg255]
+    vmulpd  ymm6, ymm5, ymm3
+    vmovapd ymm7, yword [rsi + 64]
+    vmulpd  ymm13, ymm6, ymm7
+    vaddpd  ymm13, ymm15, ymm13
+    vmulpd  ymm15, ymm4, ymm7
+    vaddpd  ymm15, ymm15, yword [rsp + 320]
+    vmulpd  ymm5, ymm11, ymm7
+    vaddpd  ymm5, ymm5, yword [rsp + 544]
+    vmovapd ymm3, yword [rsp + 576]
+    vmulpd  ymm2, ymm3, ymm7
+    vaddpd  ymm2, ymm2, yword [rsp + 352]
+    vmovapd yword [rsp + 320], ymm2
+    vmovapd ymm4, yword [rsp + 512]
+    vmulpd  ymm2, ymm4, ymm7
+    vaddpd  ymm2, ymm2, yword [rsp + 224]
+    vmovapd yword [rsp + 224], ymm2
+    vmulpd  ymm14, ymm7, yword [rsp + 288]
+    vaddpd  ymm14, ymm14, yword [rsp + 128]
+    vmulpd  ymm2, ymm8, ymm7
+    vaddpd  ymm2, ymm2, yword [rsp + 32]
+    vmovapd yword [rsp + 32], ymm2
+    vmulpd  ymm2, ymm12, ymm7
+    vaddpd  ymm2, ymm2, yword [rsp + 192]
+    vmovapd yword [rsp + 192], ymm2
+    vmovapd ymm11, yword [rsp + 448]
+    vmulpd  ymm2, ymm11, ymm7
+    vaddpd  ymm2, ymm2, yword [rsp]
+    vmovapd yword [rsp], ymm2
+    vmulpd  ymm2, ymm10, ymm7
+    vaddpd  ymm2, ymm2, yword [rsp + 96]
+    vmovapd yword [rsp + 96], ymm2
+    vmulpd  ymm2, ymm9, ymm7
+    vaddpd  ymm0, ymm0, ymm2
+    vmovapd yword [rsp + 160], ymm0
+    vmulpd  ymm2, ymm1, ymm7
+    vaddpd  ymm0, ymm2, yword [rsp + 64]
+    vmovapd yword [rsp + 64], ymm0
+    vmovapd ymm2, yword [rel .const_19p_neg255]
+    vmulpd  ymm0, ymm1, ymm2
+    vmovapd ymm1, yword [rsi + 96]
+    vmulpd  ymm7, ymm0, ymm1
+    vmovapd yword [rsp + 544], ymm0
+    vaddpd  ymm7, ymm13, ymm7
+    vmulpd  ymm13, ymm6, ymm1
+    vaddpd  ymm13, ymm15, ymm13
+    vmulpd  ymm15, ymm1, yword [rsp + 640]
+    vaddpd  ymm5, ymm5, ymm15
+    vmovapd yword [rsp + 352], ymm5
+    vmulpd  ymm15, ymm1, yword [rsp + 608]
+    vaddpd  ymm15, ymm15, yword [rsp + 320]
+    vmulpd  ymm5, ymm3, ymm1
+    vaddpd  ymm3, ymm5, yword [rsp + 224]
+    vmovapd yword [rsp + 224], ymm3
+    vmulpd  ymm5, ymm4, ymm1
+    vaddpd  ymm3, ymm14, ymm5
+    vmovapd yword [rsp + 128], ymm3
+    vmulpd  ymm14, ymm1, yword [rsp + 288]
+    vaddpd  ymm14, ymm14, yword [rsp + 32]
+    vmulpd  ymm5, ymm8, ymm1
+    vmovapd ymm12, ymm8
+    vmovapd yword [rsp + 480], ymm8
+    vaddpd  ymm3, ymm5, yword [rsp + 192]
+    vmovapd yword [rsp + 32], ymm3
+    vmulpd  ymm5, ymm1, yword [rsp + 384]
+    vaddpd  ymm3, ymm5, yword [rsp]
+    vmovapd yword [rsp + 192], ymm3
+    vmulpd  ymm5, ymm11, ymm1
+    vaddpd  ymm3, ymm5, yword [rsp + 96]
+    vmovapd yword [rsp], ymm3
+    vmulpd  ymm5, ymm10, ymm1
+    vaddpd  ymm3, ymm5, yword [rsp + 160]
+    vmovapd yword [rsp + 96], ymm3
+    vmulpd  ymm1, ymm9, ymm1
+    vaddpd  ymm1, ymm1, yword [rsp + 64]
+    vmovapd yword [rsp + 64], ymm1
+    vmulpd  ymm1, ymm9, ymm2
+    vmovapd yword [rsp + 320], ymm1
+    vmovapd ymm2, yword [rsi + 128]
+    vmulpd  ymm5, ymm1, ymm2
+    vaddpd  ymm5, ymm7, ymm5
+    vmulpd  ymm7, ymm0, ymm2
+    vaddpd  ymm7, ymm13, ymm7
+    vmulpd  ymm13, ymm6, ymm2
+    vmovapd ymm4, ymm6
+    vmovapd yword [rsp + 416], ymm6
+    vaddpd  ymm13, ymm13, yword [rsp + 352]
+    vmovapd ymm3, yword [rsp + 640]
+    vmulpd  ymm0, ymm3, ymm2
+    vaddpd  ymm0, ymm15, ymm0
+    vmovapd yword [rsp + 160], ymm0
+    vmovapd ymm1, yword [rsp + 608]
+    vmulpd  ymm15, ymm1, ymm2
+    vaddpd  ymm15, ymm15, yword [rsp + 224]
+    vmulpd  ymm0, ymm2, yword [rsp + 576]
+    vaddpd  ymm0, ymm0, yword [rsp + 128]
+    vmovapd yword [rsp + 224], ymm0
+    vmovapd ymm8, yword [rsp + 512]
+    vmulpd  ymm0, ymm8, ymm2
+    vaddpd  ymm0, ymm14, ymm0
+    vmovapd yword [rsp + 128], ymm0
+    vmovapd ymm6, yword [rsp + 288]
+    vmulpd  ymm14, ymm6, ymm2
+    vaddpd  ymm14, ymm14, yword [rsp + 32]
+    vmulpd  ymm0, ymm12, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 192]
+    vmovapd yword [rsp + 32], ymm0
+    vmovapd ymm9, yword [rsp + 384]
+    vmulpd  ymm0, ymm9, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp]
+    vmovapd yword [rsp + 192], ymm0
+    vmulpd  ymm0, ymm11, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 96]
+    vmovapd yword [rsp], ymm0
+    vmulpd  ymm2, ymm10, ymm2
+    vaddpd  ymm0, ymm2, yword [rsp + 64]
+    vmovapd yword [rsp + 96], ymm0
+    vmulpd  ymm10, ymm10, yword [rel .const_19p_neg255]
+    vmovapd ymm2, yword [rsi + 160]
+    vmulpd  ymm0, ymm10, ymm2
+    vaddpd  ymm0, ymm5, ymm0
+    vmovapd yword [rsp + 64], ymm0
+    vmulpd  ymm5, ymm2, yword [rsp + 320]
+    vaddpd  ymm5, ymm7, ymm5
+    vmulpd  ymm7, ymm2, yword [rsp + 544]
+    vaddpd  ymm7, ymm13, ymm7
+    vmulpd  ymm13, ymm4, ymm2
+    vaddpd  ymm13, ymm13, yword [rsp + 160]
+    vmulpd  ymm0, ymm3, ymm2
+    vaddpd  ymm0, ymm15, ymm0
+    vmovapd yword [rsp + 160], ymm0
+    vmulpd  ymm15, ymm1, ymm2
+    vaddpd  ymm15, ymm15, yword [rsp + 224]
+    vmovapd ymm3, yword [rsp + 576]
+    vmulpd  ymm0, ymm3, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 128]
+    vmovapd yword [rsp + 128], ymm0
+    vmulpd  ymm0, ymm8, ymm2
+    vaddpd  ymm0, ymm14, ymm0
+    vmovapd yword [rsp + 256], ymm0
+    vmulpd  ymm14, ymm6, ymm2
+    vmovapd ymm12, ymm6
+    vaddpd  ymm14, ymm14, yword [rsp + 32]
+    vmovapd ymm4, yword [rsp + 480]
+    vmulpd  ymm0, ymm4, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 192]
+    vmovapd yword [rsp + 32], ymm0
+    vmulpd  ymm0, ymm9, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp]
+    vmovapd yword [rsp + 192], ymm0
+    vmulpd  ymm2, ymm11, ymm2
+    vaddpd  ymm1, ymm2, yword [rsp + 96]
+    vmovapd yword [rsp], ymm1
+    vmulpd  ymm1, ymm11, yword [rel .const_19p_neg255]
+    vmovapd ymm2, yword [rsi + 192]
+    vmulpd  ymm0, ymm1, ymm2
+    vmovapd ymm6, ymm1
+    vmovapd yword [rsp + 224], ymm1
+    vaddpd  ymm0, ymm0, yword [rsp + 64]
+    vmovapd yword [rsp + 96], ymm0
+    vmulpd  ymm0, ymm10, ymm2
+    vaddpd  ymm0, ymm5, ymm0
+    vmovapd yword [rsp + 64], ymm0
+    vmovapd ymm9, yword [rsp + 320]
+    vmulpd  ymm5, ymm9, ymm2
+    vaddpd  ymm5, ymm7, ymm5
+    vmovapd ymm11, yword [rsp + 544]
+    vmulpd  ymm7, ymm11, ymm2
+    vaddpd  ymm7, ymm13, ymm7
+    vmovapd ymm1, yword [rsp + 416]
+    vmulpd  ymm13, ymm1, ymm2
+    vaddpd  ymm13, ymm13, yword [rsp + 160]
+    vmulpd  ymm0, ymm2, yword [rsp + 640]
+    vaddpd  ymm0, ymm15, ymm0
+    vmovapd yword [rsp + 160], ymm0
+    vmulpd  ymm15, ymm2, yword [rsp + 608]
+    vaddpd  ymm15, ymm15, yword [rsp + 128]
+    vmulpd  ymm0, ymm3, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 256]
+    vmovapd yword [rsp + 128], ymm0
+    vmulpd  ymm0, ymm8, ymm2
+    vaddpd  ymm0, ymm14, ymm0
+    vmovapd yword [rsp + 256], ymm0
+    vmulpd  ymm14, ymm12, ymm2
+    vaddpd  ymm14, ymm14, yword [rsp + 32]
+    vmulpd  ymm0, ymm4, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 192]
+    vmovapd yword [rsp + 32], ymm0
+    vmovapd ymm0, yword [rsp + 384]
+    vmulpd  ymm2, ymm0, ymm2
+    vaddpd  ymm2, ymm2, yword [rsp]
+    vmovapd yword [rsp + 192], ymm2
+    vmovapd ymm2, yword [rel .const_19p_neg255]
+    vmulpd  ymm3, ymm0, ymm2
+    vmovapd ymm2, yword [rsi + 224]
+    vmulpd  ymm0, ymm3, ymm2
+    vmovapd ymm4, ymm3
+    vmovapd yword [rsp + 384], ymm3
+    vaddpd  ymm0, ymm0, yword [rsp + 96]
+    vmovapd yword [rsp], ymm0
+    vmulpd  ymm0, ymm6, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 64]
+    vmovapd yword [rsp + 96], ymm0
+    vmulpd  ymm0, ymm10, ymm2
+    vmovapd yword [rsp + 352], ymm10
+    vaddpd  ymm0, ymm5, ymm0
+    vmovapd yword [rsp + 64], ymm0
+    vmulpd  ymm5, ymm9, ymm2
+    vaddpd  ymm5, ymm7, ymm5
+    vmovapd ymm3, ymm11
+    vmulpd  ymm7, ymm11, ymm2
+    vaddpd  ymm7, ymm13, ymm7
+    vmulpd  ymm13, ymm1, ymm2
+    vaddpd  ymm13, ymm13, yword [rsp + 160]
+    vmovapd ymm1, yword [rsp + 640]
+    vmulpd  ymm0, ymm1, ymm2
+    vaddpd  ymm0, ymm15, ymm0
+    vmovapd yword [rsp + 160], ymm0
+    vmovapd ymm11, yword [rsp + 608]
+    vmulpd  ymm15, ymm11, ymm2
+    vaddpd  ymm15, ymm15, yword [rsp + 128]
+    vmovapd ymm6, yword [rsp + 576]
+    vmulpd  ymm0, ymm6, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 256]
+    vmovapd yword [rsp + 128], ymm0
+    vmulpd  ymm0, ymm8, ymm2
+    vaddpd  ymm0, ymm14, ymm0
+    vmovapd yword [rsp + 256], ymm0
+    vmulpd  ymm14, ymm12, ymm2
+    vaddpd  ymm14, ymm14, yword [rsp + 32]
+    vmovapd ymm0, yword [rsp + 480]
+    vmulpd  ymm2, ymm0, ymm2
+    vaddpd  ymm2, ymm2, yword [rsp + 192]
+    vmovapd yword [rsp + 32], ymm2
+    vmulpd  ymm0, ymm0, yword [rel .const_19p_neg255]
+    vmovapd yword [rsp + 480], ymm0
+    vmovapd ymm2, yword [rsi + 256]
+    vmulpd  ymm0, ymm0, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp]
+    vmovapd yword [rsp], ymm0
+    vmulpd  ymm0, ymm4, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 96]
+    vmovapd yword [rsp + 96], ymm0
+    vmovapd ymm4, yword [rsp + 224]
+    vmulpd  ymm0, ymm4, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 64]
+    vmovapd yword [rsp + 64], ymm0
+    vmulpd  ymm0, ymm10, ymm2
+    vaddpd  ymm0, ymm5, ymm0
+    vmovapd yword [rsp + 448], ymm0
+    vmulpd  ymm5, ymm9, ymm2
+    vmovapd ymm12, ymm9
+    vaddpd  ymm5, ymm7, ymm5
+    vmulpd  ymm7, ymm3, ymm2
+    vmovapd ymm9, ymm3
+    vaddpd  ymm7, ymm13, ymm7
+    vmulpd  ymm13, ymm2, yword [rsp + 416]
+    vaddpd  ymm13, ymm13, yword [rsp + 160]
+    vmulpd  ymm0, ymm1, ymm2
+    vmovapd ymm10, ymm1
+    vaddpd  ymm0, ymm15, ymm0
+    vmovapd yword [rsp + 160], ymm0
+    vmovapd ymm3, ymm11
+    vmulpd  ymm15, ymm11, ymm2
+    vaddpd  ymm15, ymm15, yword [rsp + 128]
+    vmulpd  ymm0, ymm6, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 256]
+    vmovapd yword [rsp + 128], ymm0
+    vmulpd  ymm0, ymm8, ymm2
+    vaddpd  ymm0, ymm14, ymm0
+    vmovapd yword [rsp + 256], ymm0
+    vmovapd ymm0, yword [rsp + 288]
+    vmulpd  ymm2, ymm0, ymm2
+    vaddpd  ymm1, ymm2, yword [rsp + 32]
+    vmovapd yword [rsp + 32], ymm1
+    vmovapd ymm1, yword [rel .const_19p_neg255]
+    vmulpd  ymm0, ymm0, ymm1
+    vmovapd ymm2, yword [rsi + 288]
+    vmulpd  ymm14, ymm0, ymm2
+    vmovapd ymm11, ymm0
+    vmovapd yword [rsp + 192], ymm0
+    vaddpd  ymm14, ymm14, yword [rsp]
+    vmulpd  ymm0, ymm2, yword [rsp + 480]
+    vaddpd  ymm0, ymm0, yword [rsp + 96]
+    vmovapd yword [rsp + 288], ymm0
+    vmulpd  ymm0, ymm2, yword [rsp + 384]
+    vaddpd  ymm0, ymm0, yword [rsp + 64]
+    vmovapd yword [rsp], ymm0
+    vmulpd  ymm0, ymm4, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 448]
+    vmovapd yword [rsp + 448], ymm0
+    vmovapd ymm6, yword [rsp + 352]
+    vmulpd  ymm0, ymm6, ymm2
+    vaddpd  ymm0, ymm5, ymm0
+    vmovapd yword [rsp + 704], ymm0
+    vmulpd  ymm5, ymm12, ymm2
+    vaddpd  ymm5, ymm7, ymm5
+    vmulpd  ymm7, ymm9, ymm2
+    vaddpd  ymm7, ymm13, ymm7
+    vmovapd ymm1, yword [rsp + 416]
+    vmulpd  ymm13, ymm1, ymm2
+    vaddpd  ymm13, ymm13, yword [rsp + 160]
+    vmulpd  ymm0, ymm10, ymm2
+    vaddpd  ymm0, ymm15, ymm0
+    vmovapd yword [rsp + 160], ymm0
+    vmulpd  ymm15, ymm3, ymm2
+    vmovapd ymm8, ymm3
+    vaddpd  ymm15, ymm15, yword [rsp + 128]
+    vmovapd ymm3, yword [rsp + 576]
+    vmulpd  ymm0, ymm3, ymm2
+    vaddpd  ymm0, ymm0, yword [rsp + 256]
+    vmovapd yword [rsp + 256], ymm0
+    vmovapd ymm0, yword [rsp + 512]
+    vmulpd  ymm2, ymm0, ymm2
+    vaddpd  ymm2, ymm2, yword [rsp + 32]
+    vmovapd yword [rsp + 672], ymm2
+    vmovapd ymm4, yword [rel .const_19p_neg255]
+    vmulpd  ymm2, ymm0, ymm4
+    vmovapd ymm4, yword [rsi + 320]
+    vmulpd  ymm0, ymm2, ymm4
+    vaddpd  ymm0, ymm14, ymm0
+    vmulpd  ymm14, ymm11, ymm4
+    vaddpd  ymm9, ymm14, yword [rsp + 288]
+    vmovapd yword [rsp + 64], ymm9
+    vmovapd ymm12, yword [rsp + 480]
+    vmulpd  ymm14, ymm12, ymm4
+    vaddpd  ymm9, ymm14, yword [rsp]
+    vmovapd yword [rsp + 96], ymm9
+    vmovapd ymm9, yword [rsp + 384]
+    vmulpd  ymm14, ymm9, ymm4
+    vaddpd  ymm11, ymm14, yword [rsp + 448]
+    vmovapd yword [rsp], ymm11
+    vmovapd ymm11, yword [rsp + 224]
+    vmulpd  ymm14, ymm11, ymm4
+    vaddpd  ymm14, ymm14, yword [rsp + 704]
+    vmovapd yword [rsp + 32], ymm14
+    vmulpd  ymm14, ymm6, ymm4
+    vaddpd  ymm14, ymm5, ymm14
+    vmovapd ymm6, yword [rsp + 320]
+    vmulpd  ymm5, ymm6, ymm4
+    vaddpd  ymm5, ymm7, ymm5
+    vmovapd yword [rsp + 128], ymm5
+    vmovapd ymm5, yword [rsp + 544]
+    vmulpd  ymm7, ymm5, ymm4
+    vaddpd  ymm7, ymm13, ymm7
+    vmulpd  ymm13, ymm1, ymm4
+    vaddpd  ymm1, ymm13, yword [rsp + 160]
+    vmovapd yword [rsp + 512], ymm1
+    vmulpd  ymm13, ymm10, ymm4
+    vaddpd  ymm15, ymm15, ymm13
+    vmulpd  ymm13, ymm8, ymm4
+    vaddpd  ymm1, ymm13, yword [rsp + 256]
+    vmovapd yword [rsp + 288], ymm1
+    vmulpd  ymm13, ymm3, yword [rel .const_19p_neg255]
+    vmulpd  ymm3, ymm3, ymm4
+    vaddpd  ymm1, ymm3, yword [rsp + 672]
+    vmovapd ymm3, yword [rsi + 352]
+    vmulpd  ymm4, ymm13, ymm3
+    vaddpd  ymm0, ymm0, ymm4
+    vmovapd yword [rsp + 736], ymm0
+    vmulpd  ymm0, ymm2, ymm3
+    vaddpd  ymm0, ymm0, yword [rsp + 64]
+    vmovapd yword [rsp + 768], ymm0
+    vmulpd  ymm0, ymm3, yword [rsp + 192]
+    vaddpd  ymm0, ymm0, yword [rsp + 96]
+    vmovapd yword [rsp + 800], ymm0
+    vmulpd  ymm0, ymm12, ymm3
+    vaddpd  ymm0, ymm0, yword [rsp]
+    vmovapd yword [rsp + 832], ymm0
+    vmulpd  ymm0, ymm9, ymm3
+    vaddpd  ymm0, ymm0, yword [rsp + 32]
+    vmovapd yword [rsp + 864], ymm0
+    vmulpd  ymm0, ymm11, ymm3
+    vaddpd  ymm0, ymm14, ymm0
+    vmovapd yword [rsp + 896], ymm0
+    vmulpd  ymm0, ymm3, yword [rsp + 352]
+    vaddpd  ymm0, ymm0, yword [rsp + 128]
+    vmovapd yword [rsp + 928], ymm0
+    vmulpd  ymm0, ymm6, ymm3
+    vaddpd  ymm0, ymm7, ymm0
+    vmovapd yword [rsp + 960], ymm0
+    vmulpd  ymm0, ymm5, ymm3
+    vaddpd  ymm0, ymm0, yword [rsp + 512]
+    vmovapd yword [rsp + 992], ymm0
+    vmulpd  ymm0, ymm3, yword [rsp + 416]
+    vaddpd  ymm0, ymm15, ymm0
+    vmovapd yword [rsp + 1024], ymm0
+    vmulpd  ymm0, ymm10, ymm3
+    vaddpd  ymm0, ymm0, yword [rsp + 288]
+    vmovapd yword [rsp + 1056], ymm0
+    vmulpd  ymm0, ymm8, ymm3
+    vaddpd  ymm0, ymm1, ymm0
+    vmovapd yword [rsp + 1088], ymm0
+
+    mov rsp, rbp
+    pop rbp
+    bench_epilogue
+    ret
+
+section .rodata:
+align 32, db 0
+.const_19p_neg255: times 4 dq 0x19p-255
