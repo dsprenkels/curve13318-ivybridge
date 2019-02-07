@@ -14,9 +14,7 @@ E = EllipticCurve(F, [-3, 13318])
 
 from hypothesis import assume, example, given, HealthCheck, note, seed, settings, strategies as st, unlimited
 
-settings.register_profile("ci", settings(deadline=None,
-                                         max_examples=10000,
-                                         timeout=unlimited))
+settings.register_profile("ci", settings(deadline=None, max_examples=10000))
 
 if os.environ.get('CI', None) == '1':
     settings.load_profile("ci")
@@ -706,14 +704,15 @@ class TestScalarmult(unittest.TestCase):
         ret = scalarmult(c_bytes_out, k_bytes, c_bytes_in)
         self.assertEqual(ret, expected)
 
-    @given(st.integers(-1, 15), st.data())
+    @given(st.integers(-1, 15), st.one_of(st.none(), st.data()))
     def test_select(self, idx, random_numbers):
         dest_c = allocate_aligned(ge_type, 32)
         ptable_c = allocate_aligned(ge_type * 16, 32)
         for i,_ in enumerate(ptable_c):
             for j,_ in enumerate(ptable_c[i]):
                 for k,_ in enumerate(ptable_c[i][j]):
-                    ptable_c[i][j][k] = random_numbers.draw(st.integers(0, 2**53-1))
+                    if random_numbers: 
+                        ptable_c[i][j][k] = random_numbers.draw(st.integers(0, 2**53-1))
 
         if idx == -1:
             # Load neutral element

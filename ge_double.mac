@@ -96,7 +96,7 @@
         vextractf128 xmm12, ymm%[i], 0b01           ; [v8, v17]
         vpermilpd xmm13, xmm12, 0b01                ; [v17, v8]
         vblendpd xmm14, xmm12, xmm13, 0b01          ; [v17, v17]
-        vaddpd xmm14, xmm%[i], xmm14                ; computing [v25, v19] ≤ [1.52 * 2^23, 1.66 * 2^35]
+        vsubpd xmm14, xmm%[i], xmm14                ; computing [v25, v19] ≤ [1.52 * 2^23, 1.66 * 2^35]
         vpermilpd xmm13, xmm14, 0b01                ; [v19, v25]
         vmovapd xmm15, oword [t2 + i*32]            ; [v1, v6]
         vsubsd xmm13, xmm15, xmm13                  ; computing v20 : |v20| ≤ 1.67 * 2^35
@@ -169,7 +169,7 @@
 
 %macro ge_double_consts 0
     align 32, db 0
-    .const_mulsmall:    dq 3.0, 26636.0, -6659.0, -3.0
+    .const_mulsmall:    dq 3.0, 26636.0, -6659.0, 3.0
     align 16, db 0
     .const_neg6_8:      dq -6.0, 8.0
     align 8, db 0
