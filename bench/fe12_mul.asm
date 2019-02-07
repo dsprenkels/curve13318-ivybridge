@@ -663,7 +663,6 @@ scratch_space: resb 1536
     ; loads), we will compute these values ahead of time (in-between the rounds).
     ;
     ; round 1/6
-    nop
     vmovapd ymm6, yword [A]             ; load A[0]
     vmovapd ymm7, yword [A6_shr]
     vsubpd ymm6, ymm6, ymm7             ; mA0 := A[0] - A6_shr
