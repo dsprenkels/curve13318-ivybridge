@@ -62,7 +62,7 @@
         vbroadcastsd ymm12, qword [z + i*8]         ; [z, z, z, z]
         vblendpd ymm%[A], ymm14, ymm12, 0b1100      ; [x, x, z, z]
         vblendpd ymm%[B], ymm14, ymm12, 0b0110      ; [x, z, z, x]
-        vblendpd ymm%[B], ymm%[B], ymm13, 0b1000      ; [x, z, z, y]
+        vblendpd ymm%[B], ymm%[B], ymm13, 0b1000    ; [x, z, z, y]
         vmovapd yword [t0 + i*32], ymm%[A]          ; t0 = [x, x, z, z]
         vmovapd yword [t1 + i*32], ymm%[B]          ; t1 = [x, z, z, y]
 

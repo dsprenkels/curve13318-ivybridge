@@ -41,24 +41,17 @@ int ge_frombytes(ge p, const uint8_t *s)
     // smaller than 2^255, i.e. `p <= x <= 2^255`.
     // We do not risk going out of bounds here, and the computation will go
     // along as if just reduced by p, which cannot force into any invalid
-    // points (as long as we have checked with `ge_affine_point_on_curve`.
+    // points (as long as we have checked with `ge_affine_point_on_curve`).
 
     fe12_frombytes(p[0], &s[0]);
     fe12_frombytes(p[1], &s[32]);
 
-    // Handle point at infinity encoded by (0, 0)
-    uint64_t infinity = 1;
-    for (unsigned int i = 0; i < 12; i++) infinity &= p[0][i] == 0;
-    for (unsigned int i = 0; i < 12; i++) infinity &= p[1][i] == 0;
-
-    // Set y to 1 if we are at the point at infinity
-    p[1][0] += 1 * infinity;
-    // Initialize z to 1 (or 0 if infinity)
-    p[2][0]  = 1 * !infinity;
+    // Initialize z to 1
+    p[2][0] = 1;
     for (unsigned int i = 1; i < 12; i++) p[2][i] = 0;
 
     // Check if this point is valid
-    if (!infinity & !ge_affine_point_on_curve(p)) return -1;
+    if (!ge_affine_point_on_curve(p)) return -1;
     return 0;
 }
 

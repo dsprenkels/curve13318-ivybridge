@@ -179,17 +179,14 @@ int scalarmult(uint8_t *out, const uint8_t *key, const uint8_t *in)
 {
     ge __attribute__((aligned(64))) p, __attribute__((aligned(64))) q;
     ge __attribute__((aligned(64))) ptable[16];
-    uint8_t e[32];
     uint8_t w[51], zeroth_window;
 
     // Prologue: save the MxCsr register state
     const unsigned int saved_mxcsr = replace_mxcsr();
 
-    for (unsigned int i = 0; i < 32; i++) e[i] = key[i];
-    e[31] &= 0x7F; // We do not use the 255'th bit from the key
-
     int err = ge_frombytes(p, in);
     if (err != 0) {
+        restore_mxcsr(saved_mxcsr);
         return -1;
     }
 
