@@ -1,4 +1,5 @@
-NASM :=	  nasm -g -f elf64 -F dwarf $^
+CC :=       gcc
+NASM :=	    nasm -g -f elf64 -F dwarf $^
 
 CFLAGS +=   -m64 -std=c99 -Wall -Wshadow -Wpointer-arith -Wcast-qual \
             -Wstrict-prototypes -fPIC -g -O2 -masm=intel -march=ivybridge
