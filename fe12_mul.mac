@@ -132,7 +132,7 @@
     ; We will:
     ;   - precompute the A6_shr,A11_shr,Bx_shr values and,
     ;   - compute the A7_shr..A10_shr values on the fly, because they can be done in parallel
-    ;     with vmulpd instruction.
+    ;     with vandpd instruction.
     ;
     ; In this part of the code I will apply a really specific optimization: For {A,B}x7-{A,B}x10,
     ; we know for sure that they are:
@@ -384,7 +384,7 @@
     vmovapd yword [C+352], ymm15
 
     ; compute C[{0..5}]
-    ; We may be able to do the vandpd optimization here as well, but note
+    ; We are able to do the vandpd optimization here as well, but note
     ; that most pressure comes from vaddpd, not vmulpd. So we will not
     ; gain that much by optmizing out these vmulpd instructions.
     vmovapd ymm6, yword [rel .const_1_1p_neg128]
